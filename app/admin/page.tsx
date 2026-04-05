@@ -70,7 +70,7 @@ export default function AdminPage() {
           </div>
 
           <Tabs defaultValue="settings" className="space-y-6">
-            <TabsList className="grid grid-cols-4 w-full max-w-2xl bg-secondary">
+            <TabsList className="grid grid-cols-5 w-full max-w-4xl bg-secondary">
               <TabsTrigger value="settings" className="flex items-center gap-2">
                 <Settings className="h-4 w-4" />
                 <span className="hidden sm:inline">Settings</span>

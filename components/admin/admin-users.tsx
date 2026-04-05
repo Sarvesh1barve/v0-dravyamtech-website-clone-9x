@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Search, Users, Shield, ShieldOff, Crown, CrownOff } from "lucide-react"
+import { Loader2, Search, Users, Shield, ShieldOff, Crown, Lock } from "lucide-react"
 import { toast } from "sonner"
 
 interface Profile {
@@ -202,7 +202,7 @@ export function AdminUsers() {
                           title={user.is_subscribed ? "Remove subscription" : "Add subscription"}
                         >
                           {user.is_subscribed ? (
-                            <CrownOff className="h-4 w-4 text-red-500" />
+                            <Lock className="h-4 w-4 text-red-500" />
                           ) : (
                             <Crown className="h-4 w-4 text-yellow-500" />
                           )}
