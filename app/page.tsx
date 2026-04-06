@@ -1,5 +1,7 @@
 import { Header } from "@/components/header"
 import { Hero } from "@/components/hero"
+import { WhatWeDo } from "@/components/what-we-do"
+import { HowWeWorkSection } from "@/components/how-we-work-section"
 import { Footer } from "@/components/footer"
 
 export default function Home() {
@@ -7,6 +9,8 @@ export default function Home() {
     <main className="min-h-screen bg-background">
       <Header />
       <Hero />
+      <WhatWeDo />
+      <HowWeWorkSection />
       <Footer />
     </main>
   )
