@@ -82,13 +82,20 @@ export function ResourcesList({
         <>
           {/* Category tabs */}
           {categories.length > 1 && (
-            <div className="flex flex-wrap gap-2 mb-8 justify-center">
+            <div className="flex overflow-x-auto gap-2 mb-8 justify-start md:justify-center pb-2 scrollbar-hide">
+              <Button
+                variant="default"
+                size="sm"
+                className="whitespace-nowrap bg-primary text-primary-foreground"
+              >
+                All
+              </Button>
               {categories.map((category) => (
                 <Button
                   key={category}
                   variant="outline"
                   size="sm"
-                  className="capitalize"
+                  className="capitalize whitespace-nowrap"
                 >
                   {category}
                 </Button>

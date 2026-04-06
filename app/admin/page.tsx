@@ -70,20 +70,20 @@ export default function AdminPage() {
           </div>
 
           <Tabs defaultValue="settings" className="space-y-6">
-            <TabsList className="grid grid-cols-5 w-full max-w-4xl bg-secondary">
-              <TabsTrigger value="settings" className="flex items-center gap-2">
+            <TabsList className="flex flex-wrap gap-2 h-auto p-2 bg-secondary/50 rounded-lg w-full max-w-4xl">
+              <TabsTrigger value="settings" className="flex items-center gap-2 flex-1 min-w-[80px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <Settings className="h-4 w-4" />
                 <span className="hidden sm:inline">Settings</span>
               </TabsTrigger>
-              <TabsTrigger value="resources" className="flex items-center gap-2">
+              <TabsTrigger value="resources" className="flex items-center gap-2 flex-1 min-w-[80px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <Video className="h-4 w-4" />
                 <span className="hidden sm:inline">Resources</span>
               </TabsTrigger>
-              <TabsTrigger value="users" className="flex items-center gap-2">
+              <TabsTrigger value="users" className="flex items-center gap-2 flex-1 min-w-[80px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">Users</span>
               </TabsTrigger>
-              <TabsTrigger value="payments" className="flex items-center gap-2">
+              <TabsTrigger value="payments" className="flex items-center gap-2 flex-1 min-w-[80px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <CreditCard className="h-4 w-4" />
                 <span className="hidden sm:inline">Payments</span>
               </TabsTrigger>
