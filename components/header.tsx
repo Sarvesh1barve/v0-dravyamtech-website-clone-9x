@@ -141,59 +141,42 @@ export function Header() {
       </nav>
 
       {/* Mobile menu - Full screen overlay */}
-      <div 
-        className={`lg:hidden fixed inset-0 z-[100] transition-all duration-300 ${
-          mobileMenuOpen ? "visible opacity-100" : "invisible opacity-0"
-        }`}
-      >
-        {/* Backdrop */}
-        <div 
-          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-          onClick={() => setMobileMenuOpen(false)}
-        />
-        
-        {/* Menu Panel */}
-        <div 
-          className={`absolute top-0 right-0 h-full w-full max-w-sm bg-background shadow-2xl transform transition-transform duration-300 ease-out ${
-            mobileMenuOpen ? "translate-x-0" : "translate-x-full"
-          }`}
-        >
-          <div className="flex flex-col h-full overflow-y-auto">
+      {mobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-[100]">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          
+          {/* Menu Panel */}
+          <div 
+            className="absolute top-0 right-0 bottom-0 w-full sm:w-80 bg-background border-l border-border shadow-2xl flex flex-col overflow-hidden"
+          >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-              <Link 
-                href="/" 
-                className="flex items-center gap-3"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
-                  <svg className="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" fill="none"/>
-                  </svg>
-                </div>
-                <span className="font-semibold text-foreground">Dravyam</span>
-              </Link>
+              <span className="font-semibold text-foreground text-lg">Menu</span>
               <button
                 type="button"
-                className="p-2 rounded-full bg-secondary text-foreground hover:bg-secondary/80 transition-colors"
+                className="p-2 rounded-md hover:bg-secondary transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <span className="sr-only">Close menu</span>
-                <X className="h-5 w-5" aria-hidden="true" />
+                <X className="h-6 w-6 text-foreground" aria-hidden="true" />
               </button>
             </div>
 
             {/* Navigation Links */}
-            <nav className="flex-1 px-4 py-6">
-              <div className="space-y-1">
+            <nav className="flex-1 overflow-y-auto">
+              <div className="px-3 py-4 space-y-2">
                 {navigation.map((item) => (
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`flex items-center px-4 py-3 rounded-lg text-base font-medium transition-colors ${
+                    className={`flex items-center px-4 py-3 rounded-lg text-base font-medium transition-all ${
                       isActive(item.href)
-                        ? "text-primary bg-primary/10 border-l-4 border-primary"
-                        : "text-foreground hover:bg-secondary"
+                        ? "text-primary bg-primary/15 border-l-4 border-primary pl-3"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                     }`}
                     onClick={() => setMobileMenuOpen(false)}
                   >
@@ -204,39 +187,44 @@ export function Header() {
             </nav>
 
             {/* User Actions */}
-            <div className="px-4 py-6 border-t border-border space-y-3">
+            <div className="px-3 py-4 border-t border-border space-y-2 bg-secondary/30">
               {user ? (
                 <>
                   {isAdmin && (
                     <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="block">
-                      <Button variant="outline" className="w-full justify-start h-12 text-base border-primary/50">
-                        <Shield className="h-5 w-5 mr-3" />
+                      <Button 
+                        variant="default" 
+                        className="w-full justify-start h-11 text-sm bg-primary/20 text-primary hover:bg-primary/30 border border-primary/50"
+                      >
+                        <Shield className="h-5 w-5 mr-2 flex-shrink-0" />
                         Admin Panel
                       </Button>
                     </Link>
                   )}
                   <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="block">
-                    <Button variant="outline" className="w-full justify-start h-12 text-base">
-                      <User className="h-5 w-5 mr-3" />
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start h-11 text-sm border-muted-foreground/30"
+                    >
+                      <User className="h-5 w-5 mr-2 flex-shrink-0" />
                       Dashboard
                     </Button>
                   </Link>
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start h-12 text-base text-muted-foreground hover:text-foreground"
+                  <button 
+                    className="w-full text-left px-4 py-3 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-all flex items-center"
                     onClick={() => {
                       handleSignOut()
                       setMobileMenuOpen(false)
                     }}
                   >
-                    <LogOut className="h-5 w-5 mr-3" />
+                    <LogOut className="h-5 w-5 mr-2 flex-shrink-0" />
                     Logout
-                  </Button>
+                  </button>
                 </>
               ) : (
                 <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="block">
-                  <Button className="w-full h-12 text-base bg-primary text-primary-foreground hover:bg-primary/90">
-                    <User className="h-5 w-5 mr-3" />
+                  <Button className="w-full h-11 text-sm bg-primary text-primary-foreground hover:bg-primary/90">
+                    <User className="h-5 w-5 mr-2 flex-shrink-0" />
                     Login
                   </Button>
                 </Link>
@@ -244,7 +232,7 @@ export function Header() {
             </div>
           </div>
         </div>
-      </div>
+      )}
     </header>
   )
 }
