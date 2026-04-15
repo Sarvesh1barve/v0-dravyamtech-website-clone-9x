@@ -10,7 +10,9 @@ import { AdminSettings } from "@/components/admin/admin-settings"
 import { AdminResources } from "@/components/admin/admin-resources"
 import { AdminUsers } from "@/components/admin/admin-users"
 import { AdminPayments } from "@/components/admin/admin-payments"
-import { Settings, Video, Users, CreditCard, Loader2 } from "lucide-react"
+import { Settings, Video, Users, CreditCard, Loader2, HelpCircle } from "lucide-react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
 export default function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false)
@@ -62,11 +64,19 @@ export default function AdminPage() {
       <Header />
       <main className="flex-1 py-8 pt-24">
         <div className="container mx-auto px-4">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
-            <p className="text-muted-foreground mt-2">
-              Manage your website settings, resources, users, and payments
-            </p>
+          <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
+              <p className="text-muted-foreground mt-2">
+                Manage your website settings, resources, users, and payments
+              </p>
+            </div>
+            <Link href="/admin/guide">
+              <Button variant="outline" className="gap-2">
+                <HelpCircle className="h-4 w-4" />
+                View Guide
+              </Button>
+            </Link>
           </div>
 
           <Tabs defaultValue="settings" className="space-y-6">
