@@ -13,8 +13,10 @@ import {
   Settings,
   Loader2,
   X,
-  Check
+  Check,
+  Shield
 } from "lucide-react"
+import Link from "next/link"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
 interface Resource {
@@ -46,6 +48,7 @@ interface Profile {
   full_name: string | null
   email: string | null
   is_subscribed: boolean
+  is_admin: boolean
   subscription_expires_at: string | null
 }
 
@@ -107,7 +110,17 @@ export function DashboardContent({
 
   return (
     <div className="max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold text-foreground mb-8">Dashboard</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+        <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+        {profile?.is_admin && (
+          <Link href="/admin">
+            <Button className="bg-primary/20 text-primary hover:bg-primary/30 border border-primary/50">
+              <Shield className="h-4 w-4 mr-2" />
+              Admin Panel
+            </Button>
+          </Link>
+        )}
+      </div>
 
       {/* Tabs */}
       <div className="flex overflow-x-auto gap-2 mb-8 border-b border-border pb-4 scrollbar-hide">
@@ -144,6 +157,28 @@ export function DashboardContent({
               </div>
             </div>
           </div>
+
+          {/* Admin Status - Only show if admin */}
+          {profile?.is_admin && (
+            <div className="bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/30 rounded-xl p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-foreground">Administrator</h2>
+                    <p className="text-sm text-muted-foreground">You have full admin access</p>
+                  </div>
+                </div>
+                <Link href="/admin">
+                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                    Go to Admin Panel
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
 
           {/* Subscription Status */}
           <div className="bg-card border border-border rounded-xl p-6">

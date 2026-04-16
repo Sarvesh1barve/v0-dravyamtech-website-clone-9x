@@ -42,8 +42,13 @@ export default function LoginPage() {
           password,
         })
         if (error) throw error
-        router.push("/dashboard")
-        router.refresh()
+        
+        // Force a small delay to ensure cookies are set
+        await new Promise(resolve => setTimeout(resolve, 200))
+        
+        // Use window.location for a full page refresh to ensure cookies are picked up
+        window.location.href = "/dashboard"
+        return
       } else {
         const { error } = await supabase.auth.signUp({
           email,

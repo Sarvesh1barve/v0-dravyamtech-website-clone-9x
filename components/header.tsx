@@ -22,15 +22,13 @@ export function Header() {
     try {
       const response = await fetch('/api/check-admin')
       const data = await response.json()
-      console.log("[v0] Admin check response:", data)
       
       if (data.isLoggedIn) {
         setIsAdmin(data.isAdmin === true)
       } else {
         setIsAdmin(false)
       }
-    } catch (error) {
-      console.error("[v0] Error checking admin status:", error)
+    } catch {
       setIsAdmin(false)
     }
   }, [])
@@ -40,14 +38,13 @@ export function Header() {
       setIsLoading(true)
       try {
         const { data: { user } } = await supabase.auth.getUser()
-        console.log("[v0] Initial user:", user?.email)
         setUser(user)
         
         if (user) {
           await checkAdminStatus()
         }
-      } catch (error) {
-        console.error("[v0] Error initializing auth:", error)
+      } catch {
+        // Silently handle errors
       } finally {
         setIsLoading(false)
       }
@@ -56,7 +53,6 @@ export function Header() {
     initAuth()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("[v0] Auth state changed:", event, session?.user?.email)
       setUser(session?.user ?? null)
       
       if (session?.user) {
