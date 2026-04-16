@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Menu, X, User, LogOut, Shield, Home, Info, Package, BookOpen, Settings } from "lucide-react"
@@ -12,54 +12,65 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
 
+  // Fetch admin status from API (more reliable than client-side query)
+  const checkAdminStatus = useCallback(async () => {
+    try {
+      const response = await fetch('/api/check-admin')
+      const data = await response.json()
+      console.log("[v0] Admin check response:", data)
+      
+      if (data.isLoggedIn) {
+        setIsAdmin(data.isAdmin === true)
+      } else {
+        setIsAdmin(false)
+      }
+    } catch (error) {
+      console.error("[v0] Error checking admin status:", error)
+      setIsAdmin(false)
+    }
+  }, [])
+
   useEffect(() => {
-    const fetchAdminStatus = async (userId: string) => {
-      console.log("[v0] Fetching admin status for user:", userId)
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('is_admin, email')
-        .eq('id', userId)
-        .single()
-      
-      console.log("[v0] Profile data:", profile, "Error:", error)
-      
-      if (profile) {
-        console.log("[v0] Setting isAdmin to:", profile.is_admin)
-        setIsAdmin(profile.is_admin || false)
-      } else {
-        console.log("[v0] No profile found, setting isAdmin to false")
-        setIsAdmin(false)
+    const initAuth = async () => {
+      setIsLoading(true)
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        console.log("[v0] Initial user:", user?.email)
+        setUser(user)
+        
+        if (user) {
+          await checkAdminStatus()
+        }
+      } catch (error) {
+        console.error("[v0] Error initializing auth:", error)
+      } finally {
+        setIsLoading(false)
       }
     }
+    
+    initAuth()
 
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      console.log("[v0] Current user:", user?.email, user?.id)
-      setUser(user)
-      if (user) {
-        await fetchAdminStatus(user.id)
-      } else {
-        setIsAdmin(false)
-      }
-    }
-    getUser()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      console.log("[v0] Auth state changed:", _event, session?.user?.email)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("[v0] Auth state changed:", event, session?.user?.email)
       setUser(session?.user ?? null)
+      
       if (session?.user) {
-        await fetchAdminStatus(session.user.id)
+        // Small delay to ensure session is fully established
+        setTimeout(() => {
+          checkAdminStatus()
+        }, 100)
       } else {
         setIsAdmin(false)
       }
     })
 
     return () => subscription.unsubscribe()
-  }, [supabase])
+  }, [supabase, checkAdminStatus])
 
   // Close menu when route changes
   useEffect(() => {
@@ -84,6 +95,7 @@ export function Header() {
     setIsAdmin(false)
     setMobileMenuOpen(false)
     router.push('/')
+    router.refresh()
   }
 
   const navigation = [
@@ -142,11 +154,12 @@ export function Header() {
           
           {/* Desktop User Actions */}
           <div className="hidden lg:flex lg:items-center lg:gap-x-3">
-            {user ? (
+            {!isLoading && user ? (
               <>
                 {isAdmin && (
                   <Link href="/admin">
-                    <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                    <Button variant="default" size="sm" className="bg-primary/20 text-primary hover:bg-primary/30 border border-primary/50">
+                      <Shield className="h-4 w-4 mr-2" />
                       Admin
                     </Button>
                   </Link>
@@ -167,14 +180,14 @@ export function Header() {
                   Logout
                 </Button>
               </>
-            ) : (
+            ) : !isLoading ? (
               <Link href="/login">
                 <Button variant="outline" size="sm" className="border-primary/50 text-foreground hover:bg-primary hover:text-primary-foreground">
                   <User className="h-4 w-4 mr-2" />
                   Login
                 </Button>
               </Link>
-            )}
+            ) : null}
           </div>
 
           {/* Mobile Menu Button */}
@@ -200,7 +213,7 @@ export function Header() {
 
       {/* Mobile Menu Panel */}
       <div 
-        className={`fixed top-0 right-0 bottom-0 w-[280px] max-w-[85vw] bg-background z-[9999] lg:hidden transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 bottom-0 w-[280px] max-w-[85vw] bg-background z-[9999] lg:hidden transform transition-transform duration-300 ease-in-out shadow-2xl ${
           mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -243,7 +256,7 @@ export function Header() {
 
           {/* Mobile User Actions */}
           <div className="p-4 border-t border-border space-y-2">
-            {user ? (
+            {!isLoading && user ? (
               <>
                 {isAdmin && (
                   <button
@@ -269,7 +282,7 @@ export function Header() {
                   Logout
                 </button>
               </>
-            ) : (
+            ) : !isLoading ? (
               <button
                 onClick={() => handleNavClick('/login')}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
@@ -277,7 +290,7 @@ export function Header() {
                 <User className="h-5 w-5" />
                 Login
               </button>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
