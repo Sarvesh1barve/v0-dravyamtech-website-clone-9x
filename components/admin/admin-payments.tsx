@@ -32,13 +32,19 @@ export function AdminPayments() {
   const [payments, setPayments] = useState<Payment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState("all")
-  const supabase = createClient()
+  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null)
 
   useEffect(() => {
-    fetchPayments()
+    setSupabase(createClient())
   }, [])
 
+  useEffect(() => {
+    if (!supabase) return
+    fetchPayments()
+  }, [supabase])
+
   async function fetchPayments() {
+    if (!supabase) return
     try {
       console.log("[v0] Fetching payments...")
       const { data, error } = await supabase

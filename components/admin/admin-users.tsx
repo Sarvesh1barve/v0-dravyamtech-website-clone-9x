@@ -26,11 +26,16 @@ export function AdminUsers() {
   const [filteredUsers, setFilteredUsers] = useState<Profile[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
-  const supabase = createClient()
+  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null)
 
   useEffect(() => {
-    fetchUsers()
+    setSupabase(createClient())
   }, [])
+
+  useEffect(() => {
+    if (!supabase) return
+    fetchUsers()
+  }, [supabase])
 
   useEffect(() => {
     if (searchQuery.trim() === "") {
@@ -48,6 +53,7 @@ export function AdminUsers() {
   }, [searchQuery, users])
 
   async function fetchUsers() {
+    if (!supabase) return
     try {
       console.log("[v0] Fetching users...")
       const { data, error } = await supabase

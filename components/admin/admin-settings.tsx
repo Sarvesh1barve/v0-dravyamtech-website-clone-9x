@@ -50,13 +50,19 @@ export function AdminSettings() {
   const [qrFile, setQrFile] = useState<File | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const router = useRouter()
-  const supabase = createClient()
+  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null)
 
   useEffect(() => {
-    fetchSettings()
+    setSupabase(createClient())
   }, [])
 
+  useEffect(() => {
+    if (!supabase) return
+    fetchSettings()
+  }, [supabase])
+
   async function fetchSettings() {
+    if (!supabase) return
     try {
       const { data, error } = await supabase
         .from("site_settings")

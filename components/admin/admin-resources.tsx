@@ -42,13 +42,19 @@ export function AdminResources() {
     is_locked: false
   })
 
-  const supabase = createClient()
+  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null)
 
   useEffect(() => {
-    fetchResources()
+    setSupabase(createClient())
   }, [])
 
+  useEffect(() => {
+    if (!supabase) return
+    fetchResources()
+  }, [supabase])
+
   async function fetchResources() {
+    if (!supabase) return
     const { data, error } = await supabase
       .from("resources")
       .select("*")
