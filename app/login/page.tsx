@@ -57,8 +57,7 @@ export default function LoginPage() {
             data: {
               full_name: fullName,
             },
-            emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-              `${window.location.origin}/dashboard`,
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
           },
         })
         if (error) throw error
