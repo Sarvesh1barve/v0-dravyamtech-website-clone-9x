@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import Image from "next/image"
 import { Menu, X, User, LogOut, Shield, Home, Info, Package, BookOpen, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
@@ -118,11 +119,14 @@ export function Header() {
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 sm:gap-3">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
-              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-primary" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" fill="none"/>
-              </svg>
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Dravyam Technology Logo"
+              width={44}
+              height={44}
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full"
+              priority
+            />
             <span className="text-base sm:text-lg font-semibold text-foreground tracking-tight hidden sm:block">
               Dravyam Technology
             </span>
