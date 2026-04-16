@@ -18,16 +18,27 @@ export function Header() {
 
   useEffect(() => {
     const fetchAdminStatus = async (userId: string) => {
-      const { data: profile } = await supabase
+      console.log("[v0] Fetching admin status for user:", userId)
+      const { data: profile, error } = await supabase
         .from('profiles')
-        .select('is_admin')
+        .select('is_admin, email')
         .eq('id', userId)
         .single()
-      setIsAdmin(profile?.is_admin || false)
+      
+      console.log("[v0] Profile data:", profile, "Error:", error)
+      
+      if (profile) {
+        console.log("[v0] Setting isAdmin to:", profile.is_admin)
+        setIsAdmin(profile.is_admin || false)
+      } else {
+        console.log("[v0] No profile found, setting isAdmin to false")
+        setIsAdmin(false)
+      }
     }
 
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
+      console.log("[v0] Current user:", user?.email, user?.id)
       setUser(user)
       if (user) {
         await fetchAdminStatus(user.id)
@@ -38,6 +49,7 @@ export function Header() {
     getUser()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log("[v0] Auth state changed:", _event, session?.user?.email)
       setUser(session?.user ?? null)
       if (session?.user) {
         await fetchAdminStatus(session.user.id)
