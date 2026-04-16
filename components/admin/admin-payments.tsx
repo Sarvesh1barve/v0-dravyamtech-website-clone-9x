@@ -39,48 +39,74 @@ export function AdminPayments() {
   }, [])
 
   async function fetchPayments() {
-    const { data, error } = await supabase
-      .from("payments")
-      .select(`
-        *,
-        profiles:user_id (full_name, email),
-        resources:resource_id (title)
-      `)
-      .order("created_at", { ascending: false })
+    try {
+      console.log("[v0] Fetching payments...")
+      const { data, error } = await supabase
+        .from("payments")
+        .select(`
+          *,
+          profiles:user_id (full_name, email),
+          resources:resource_id (title)
+        `)
+        .order("created_at", { ascending: false })
 
-    if (error) {
-      toast.error("Failed to load payments")
-    } else {
-      setPayments(data || [])
+      if (error) {
+        console.error("[v0] Fetch payments error:", error)
+        toast.error(`Failed to load payments: ${error.message}`)
+      } else {
+        console.log("[v0] Payments loaded:", data?.length || 0)
+        setPayments(data || [])
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to load payments"
+      console.error("[v0] Fetch exception:", err)
+      toast.error(msg)
+    } finally {
+      setIsLoading(false)
     }
-    setIsLoading(false)
   }
 
   async function updatePaymentStatus(paymentId: string, newStatus: string, userId: string) {
-    const { error } = await supabase
-      .from("payments")
-      .update({ status: newStatus })
-      .eq("id", paymentId)
+    try {
+      console.log("[v0] Updating payment status:", paymentId, "->", newStatus)
+      const { error } = await supabase
+        .from("payments")
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq("id", paymentId)
 
-    if (error) {
-      toast.error("Failed to update payment status")
-      return
+      if (error) {
+        console.error("[v0] Payment update error:", error)
+        toast.error(`Failed to update payment status: ${error.message}`)
+        return
+      }
+
+      // If approved, update user subscription
+      if (newStatus === "approved") {
+        console.log("[v0] Updating subscription for user:", userId)
+        const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        const { error: subError } = await supabase
+          .from("profiles")
+          .update({
+            is_subscribed: true,
+            subscription_expires_at: expiryDate,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", userId)
+        
+        if (subError) {
+          console.error("[v0] Subscription update error:", subError)
+          toast.error(`Payment approved but subscription update failed: ${subError.message}`)
+        }
+      }
+
+      console.log("[v0] Payment status updated successfully")
+      toast.success(`Payment ${newStatus} successfully!`)
+      fetchPayments()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error"
+      console.error("[v0] Status update exception:", err)
+      toast.error(msg)
     }
-
-    // If approved, update user subscription
-    if (newStatus === "approved") {
-      const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-      await supabase
-        .from("profiles")
-        .update({
-          is_subscribed: true,
-          subscription_expires_at: expiryDate
-        })
-        .eq("id", userId)
-    }
-
-    toast.success(`Payment ${newStatus}`)
-    fetchPayments()
   }
 
   const filteredPayments = statusFilter === "all"
