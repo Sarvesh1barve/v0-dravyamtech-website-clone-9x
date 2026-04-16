@@ -17,22 +17,33 @@ export function Header() {
   const supabase = createClient()
 
   useEffect(() => {
+    const fetchAdminStatus = async (userId: string) => {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', userId)
+        .single()
+      setIsAdmin(profile?.is_admin || false)
+    }
+
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
       if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', user.id)
-          .single()
-        setIsAdmin(profile?.is_admin || false)
+        await fetchAdminStatus(user.id)
+      } else {
+        setIsAdmin(false)
       }
     }
     getUser()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null)
+      if (session?.user) {
+        await fetchAdminStatus(session.user.id)
+      } else {
+        setIsAdmin(false)
+      }
     })
 
     return () => subscription.unsubscribe()
