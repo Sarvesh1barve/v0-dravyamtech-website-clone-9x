@@ -29,19 +29,22 @@ export default function AdminPage() {
         return
       }
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_admin")
-        .eq("id", user.id)
-        .single()
+      try {
+        // Call the API which uses service role to bypass RLS
+        const response = await fetch('/api/check-admin')
+        const data = await response.json()
+        
+        if (!data.isAdmin) {
+          router.push("/dashboard")
+          return
+        }
 
-      if (!profile?.is_admin) {
+        setIsAdmin(true)
+        setIsLoading(false)
+      } catch (error) {
+        console.error("Error checking admin status:", error)
         router.push("/dashboard")
-        return
       }
-
-      setIsAdmin(true)
-      setIsLoading(false)
     }
 
     checkAdmin()

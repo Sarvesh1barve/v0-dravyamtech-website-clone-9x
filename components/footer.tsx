@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { Linkedin, Twitter, Youtube } from "lucide-react"
 
 const navigation = {
@@ -29,11 +30,13 @@ export function Footer() {
         <div className="flex flex-col items-center gap-8">
           {/* Brand */}
           <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
-              <svg className="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" fill="none"/>
-              </svg>
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Dravyam Technology Logo"
+              width={44}
+              height={44}
+              className="w-11 h-11 rounded-full"
+            />
             <span className="text-lg font-semibold text-foreground">Dravyam Technology</span>
           </Link>
           
