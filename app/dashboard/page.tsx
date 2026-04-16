@@ -9,6 +9,9 @@ export const metadata = {
   description: "Manage your account, subscriptions, and purchased resources.",
 }
 
+// Prevent prerendering - dashboard should only render at runtime
+export const revalidate = 0
+
 export default async function DashboardPage() {
   const supabase = await createClient()
   
