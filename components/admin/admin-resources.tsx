@@ -39,8 +39,7 @@ export function AdminResources() {
     video_url: "",
     thumbnail_url: "",
     category: "general",
-    is_locked: false,
-    price: 0
+    is_locked: false
   })
 
   const supabase = createClient()
@@ -71,8 +70,7 @@ export function AdminResources() {
       video_url: "",
       thumbnail_url: "",
       category: "general",
-      is_locked: false,
-      price: 0
+      is_locked: false
     })
     setIsDialogOpen(true)
   }
@@ -85,8 +83,7 @@ export function AdminResources() {
       video_url: resource.video_url || "",
       thumbnail_url: resource.thumbnail_url || "",
       category: resource.category,
-      is_locked: resource.is_locked,
-      price: resource.price
+      is_locked: resource.is_locked
     })
     setIsDialogOpen(true)
   }
@@ -101,7 +98,8 @@ export function AdminResources() {
 
     try {
       if (editingResource) {
-        const { error } = await supabase
+        console.log("[v0] Updating resource:", editingResource.id, formData)
+        const { error, data } = await supabase
           .from("resources")
           .update({
             title: formData.title,
@@ -110,20 +108,29 @@ export function AdminResources() {
             thumbnail_url: formData.thumbnail_url || null,
             category: formData.category,
             is_locked: formData.is_locked,
-            price: formData.price,
             updated_at: new Date().toISOString()
           })
           .eq("id", editingResource.id)
+          .select()
+          .single()
 
         if (error) {
-          toast.error("Failed to update resource")
+          console.error("[v0] Update error:", error)
+          toast.error(`Failed to update resource: ${error.message}`)
         } else {
+          console.log("[v0] Resource updated successfully")
           toast.success("Resource updated successfully!")
           fetchResources()
           setIsDialogOpen(false)
+          
+          // Revalidate resources pages
+          await fetch("/api/revalidate?tag=resources-list").catch(err => 
+            console.error("[v0] Revalidation error:", err)
+          )
         }
       } else {
-        const { error } = await supabase
+        console.log("[v0] Creating new resource:", formData)
+        const { error, data } = await supabase
           .from("resources")
           .insert({
             title: formData.title,
@@ -131,20 +138,30 @@ export function AdminResources() {
             video_url: formData.video_url || null,
             thumbnail_url: formData.thumbnail_url || null,
             category: formData.category,
-            is_locked: formData.is_locked,
-            price: formData.price
+            is_locked: formData.is_locked
           })
+          .select()
+          .single()
 
         if (error) {
-          toast.error("Failed to create resource")
+          console.error("[v0] Insert error:", error)
+          toast.error(`Failed to create resource: ${error.message}`)
         } else {
+          console.log("[v0] Resource created successfully")
           toast.success("Resource created successfully!")
           fetchResources()
           setIsDialogOpen(false)
+          
+          // Revalidate resources pages
+          await fetch("/api/revalidate?tag=resources-list").catch(err => 
+            console.error("[v0] Revalidation error:", err)
+          )
         }
       }
     } catch (err) {
-      toast.error("An error occurred")
+      const msg = err instanceof Error ? err.message : "An error occurred"
+      console.error("[v0] Save exception:", err)
+      toast.error(msg)
     }
 
     setIsSaving(false)
@@ -274,21 +291,6 @@ export function AdminResources() {
                 />
               </div>
 
-              {formData.is_locked && (
-                <div className="space-y-2">
-                  <Label htmlFor="price" className="text-foreground">Price (INR)</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    min="0"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                    className="bg-input text-foreground"
-                    placeholder="0"
-                  />
-                </div>
-              )}
-
               <div className="flex justify-end gap-3 pt-4">
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
@@ -333,7 +335,7 @@ export function AdminResources() {
                     <TableCell className="text-muted-foreground capitalize">
                       {resource.category}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-muted-foreground">
                       {resource.is_locked ? (
                         <span className="inline-flex items-center gap-1 text-yellow-500">
                           <Lock className="h-3 w-3" /> Locked
@@ -345,7 +347,7 @@ export function AdminResources() {
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {resource.is_locked ? `₹${resource.price}` : "Free"}
+                      {resource.is_locked ? "Locked" : "Free"}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

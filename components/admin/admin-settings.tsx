@@ -1,13 +1,14 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Loader2, Save, Upload } from "lucide-react"
+import { Loader2, Save, Upload, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
 
 interface SiteSettings {
@@ -38,6 +39,7 @@ interface SiteSettings {
   social_twitter: string | null
   social_linkedin: string | null
   social_youtube: string | null
+  updated_at: string
 }
 
 export function AdminSettings() {
@@ -46,6 +48,8 @@ export function AdminSettings() {
   const [isSaving, setIsSaving] = useState(false)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [qrFile, setQrFile] = useState<File | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
@@ -53,25 +57,60 @@ export function AdminSettings() {
   }, [])
 
   async function fetchSettings() {
-    const { data, error } = await supabase
-      .from("site_settings")
-      .select("*")
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from("site_settings")
+        .select("*")
+        .single()
 
-    if (error && error.code !== "PGRST116") {
-      toast.error("Failed to load settings")
-      return
-    }
+      if (error && error.code !== "PGRST116") {
+        console.error("[v0] Error loading settings:", error)
+        toast.error("Failed to load settings")
+        return
+      }
 
-    if (data) {
-      setSettings(data)
+      if (data) {
+        setSettings(data)
+      } else {
+        // Create default settings if none exist
+        const defaultSettings: Partial<SiteSettings> = {
+          site_name: "Dravyam Technology",
+          site_tagline: "Fintech That Thinks Beyond Numbers",
+          site_description: "Building research-driven trading systems",
+          hero_title: "Welcome",
+          hero_highlight: "Dravyam",
+          hero_description: "Start trading smart",
+          about_title: "About Us",
+          about_description: "",
+          what_we_do_title: "What We Do",
+          what_we_do_items: [],
+          how_we_work_title: "How We Work",
+          how_we_work_items: [],
+          contact_email: "",
+          contact_phone: "",
+          contact_address: "",
+          primary_color: "#1e3a5f",
+          secondary_color: "#f59e0b",
+          accent_color: "#10b981",
+          text_color: "#ffffff",
+          heading_color: "#f59e0b",
+          upi_id: null,
+          qr_code_url: null,
+          social_twitter: null,
+          social_linkedin: null,
+          social_youtube: null,
+        }
+        setSettings(defaultSettings as SiteSettings)
+      }
+    } finally {
+      setIsLoading(false)
     }
-    setIsLoading(false)
   }
 
   async function handleSave() {
     if (!settings) return
     setIsSaving(true)
+    setUploadError(null)
 
     try {
       let logoUrl = settings.logo_url
@@ -79,39 +118,63 @@ export function AdminSettings() {
 
       // Handle logo upload
       if (logoFile) {
-        const fileExt = logoFile.name.split(".").pop()
-        const fileName = `logo-${Date.now()}.${fileExt}`
-        const { error: uploadError } = await supabase.storage
-          .from("public")
-          .upload(fileName, logoFile, { upsert: true })
+        try {
+          const fileExt = logoFile.name.split(".").pop()
+          const fileName = `logo-${Date.now()}.${fileExt}`
+          const { error: uploadError } = await supabase.storage
+            .from("public")
+            .upload(fileName, logoFile, { upsert: true })
 
-        if (!uploadError) {
+          if (uploadError) {
+            throw new Error(`Logo upload failed: ${uploadError.message}`)
+          }
+
           const { data: { publicUrl } } = supabase.storage
             .from("public")
             .getPublicUrl(fileName)
           logoUrl = publicUrl
+          console.log("[v0] Logo uploaded:", logoUrl)
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "Logo upload failed"
+          setUploadError(msg)
+          toast.error(msg)
+          setIsSaving(false)
+          return
         }
       }
 
       // Handle QR code upload
       if (qrFile) {
-        const fileExt = qrFile.name.split(".").pop()
-        const fileName = `qr-code-${Date.now()}.${fileExt}`
-        const { error: uploadError } = await supabase.storage
-          .from("public")
-          .upload(fileName, qrFile, { upsert: true })
+        try {
+          const fileExt = qrFile.name.split(".").pop()
+          const fileName = `qr-code-${Date.now()}.${fileExt}`
+          const { error: uploadError } = await supabase.storage
+            .from("public")
+            .upload(fileName, qrFile, { upsert: true })
 
-        if (!uploadError) {
+          if (uploadError) {
+            throw new Error(`QR code upload failed: ${uploadError.message}`)
+          }
+
           const { data: { publicUrl } } = supabase.storage
             .from("public")
             .getPublicUrl(fileName)
           qrCodeUrl = publicUrl
+          console.log("[v0] QR code uploaded:", qrCodeUrl)
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "QR code upload failed"
+          setUploadError(msg)
+          toast.error(msg)
+          setIsSaving(false)
+          return
         }
       }
 
-      const { error } = await supabase
+      // Update settings in database
+      const { error, data } = await supabase
         .from("site_settings")
-        .update({
+        .upsert({
+          id: settings.id || undefined,
           site_name: settings.site_name,
           site_tagline: settings.site_tagline,
           site_description: settings.site_description,
@@ -140,21 +203,43 @@ export function AdminSettings() {
           social_youtube: settings.social_youtube,
           updated_at: new Date().toISOString()
         })
-        .eq("id", settings.id)
+        .select()
+        .single()
 
       if (error) {
-        toast.error("Failed to save settings")
-      } else {
-        setSettings({ ...settings, logo_url: logoUrl, qr_code_url: qrCodeUrl })
-        setLogoFile(null)
-        setQrFile(null)
-        toast.success("Settings saved successfully!")
+        console.error("[v0] Save error:", error)
+        toast.error(`Failed to save: ${error.message}`)
+        setIsSaving(false)
+        return
       }
-    } catch (err) {
-      toast.error("An error occurred while saving")
-    }
 
-    setIsSaving(false)
+      // Update local state with saved data
+      if (data) {
+        setSettings(data)
+      }
+      
+      setLogoFile(null)
+      setQrFile(null)
+      
+      toast.success("Settings saved successfully!")
+      
+      // Revalidate all routes that use site settings
+      console.log("[v0] Revalidating routes after settings save")
+      await Promise.all([
+        fetch("/api/revalidate?tag=site-settings"),
+        fetch("/api/revalidate?tag=home-page"),
+        fetch("/api/revalidate?tag=about-page"),
+      ]).catch(err => console.error("[v0] Revalidation error:", err))
+      
+      // Refresh page to show new settings
+      router.refresh()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "An error occurred while saving"
+      console.error("[v0] Save exception:", err)
+      toast.error(msg)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   if (isLoading) {
@@ -167,6 +252,16 @@ export function AdminSettings() {
 
   return (
     <div className="space-y-6">
+      {uploadError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex gap-3">
+          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium text-red-900">Upload Error</p>
+            <p className="text-sm text-red-700">{uploadError}</p>
+          </div>
+        </div>
+      )}
+
       {/* Site Identity */}
       <Card className="bg-card border-border">
         <CardHeader>
@@ -181,6 +276,7 @@ export function AdminSettings() {
                 value={settings?.site_name || ""}
                 onChange={(e) => setSettings(s => s ? { ...s, site_name: e.target.value } : null)}
                 className="bg-input text-foreground"
+                disabled={isSaving}
               />
             </div>
             <div>
@@ -189,6 +285,7 @@ export function AdminSettings() {
                 value={settings?.site_tagline || ""}
                 onChange={(e) => setSettings(s => s ? { ...s, site_tagline: e.target.value } : null)}
                 className="bg-input text-foreground"
+                disabled={isSaving}
               />
             </div>
           </div>
@@ -198,6 +295,7 @@ export function AdminSettings() {
               value={settings?.site_description || ""}
               onChange={(e) => setSettings(s => s ? { ...s, site_description: e.target.value } : null)}
               className="bg-input text-foreground"
+              disabled={isSaving}
             />
           </div>
           <div>
@@ -208,6 +306,7 @@ export function AdminSettings() {
                 accept="image/*"
                 onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
                 className="bg-input text-foreground"
+                disabled={isSaving}
               />
               {settings?.logo_url && (
                 <img 
@@ -235,6 +334,7 @@ export function AdminSettings() {
                 value={settings?.hero_title || ""}
                 onChange={(e) => setSettings(s => s ? { ...s, hero_title: e.target.value } : null)}
                 className="bg-input text-foreground"
+                disabled={isSaving}
               />
             </div>
             <div>
@@ -243,6 +343,7 @@ export function AdminSettings() {
                 value={settings?.hero_highlight || ""}
                 onChange={(e) => setSettings(s => s ? { ...s, hero_highlight: e.target.value } : null)}
                 className="bg-input text-foreground"
+                disabled={isSaving}
               />
             </div>
           </div>
@@ -252,6 +353,36 @@ export function AdminSettings() {
               value={settings?.hero_description || ""}
               onChange={(e) => setSettings(s => s ? { ...s, hero_description: e.target.value } : null)}
               className="bg-input text-foreground"
+              disabled={isSaving}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* About Section */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="text-foreground">About Section</CardTitle>
+          <CardDescription>Customize about page content</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label className="text-foreground">About Title</Label>
+            <Input
+              value={settings?.about_title || ""}
+              onChange={(e) => setSettings(s => s ? { ...s, about_title: e.target.value } : null)}
+              className="bg-input text-foreground"
+              disabled={isSaving}
+            />
+          </div>
+          <div>
+            <Label className="text-foreground">About Description</Label>
+            <Textarea
+              value={settings?.about_description || ""}
+              onChange={(e) => setSettings(s => s ? { ...s, about_description: e.target.value } : null)}
+              className="bg-input text-foreground"
+              disabled={isSaving}
+              rows={5}
             />
           </div>
         </CardContent>
@@ -272,6 +403,7 @@ export function AdminSettings() {
                 value={settings?.contact_email || ""}
                 onChange={(e) => setSettings(s => s ? { ...s, contact_email: e.target.value } : null)}
                 className="bg-input text-foreground"
+                disabled={isSaving}
               />
             </div>
             <div>
@@ -280,6 +412,7 @@ export function AdminSettings() {
                 value={settings?.contact_phone || ""}
                 onChange={(e) => setSettings(s => s ? { ...s, contact_phone: e.target.value } : null)}
                 className="bg-input text-foreground"
+                disabled={isSaving}
               />
             </div>
             <div>
@@ -288,6 +421,7 @@ export function AdminSettings() {
                 value={settings?.contact_address || ""}
                 onChange={(e) => setSettings(s => s ? { ...s, contact_address: e.target.value } : null)}
                 className="bg-input text-foreground"
+                disabled={isSaving}
               />
             </div>
           </div>
@@ -310,6 +444,7 @@ export function AdminSettings() {
                   value={settings?.primary_color || "#1e3a5f"}
                   onChange={(e) => setSettings(s => s ? { ...s, primary_color: e.target.value } : null)}
                   className="w-16 h-10 p-1 cursor-pointer"
+                  disabled={isSaving}
                 />
               </div>
               <div className="flex items-center gap-4">
@@ -319,6 +454,7 @@ export function AdminSettings() {
                   value={settings?.secondary_color || "#f59e0b"}
                   onChange={(e) => setSettings(s => s ? { ...s, secondary_color: e.target.value } : null)}
                   className="w-16 h-10 p-1 cursor-pointer"
+                  disabled={isSaving}
                 />
               </div>
               <div className="flex items-center gap-4">
@@ -328,6 +464,7 @@ export function AdminSettings() {
                   value={settings?.accent_color || "#10b981"}
                   onChange={(e) => setSettings(s => s ? { ...s, accent_color: e.target.value } : null)}
                   className="w-16 h-10 p-1 cursor-pointer"
+                  disabled={isSaving}
                 />
               </div>
             </div>
@@ -339,6 +476,7 @@ export function AdminSettings() {
                   value={settings?.text_color || "#ffffff"}
                   onChange={(e) => setSettings(s => s ? { ...s, text_color: e.target.value } : null)}
                   className="w-16 h-10 p-1 cursor-pointer"
+                  disabled={isSaving}
                 />
               </div>
               <div className="flex items-center gap-4">
@@ -348,6 +486,7 @@ export function AdminSettings() {
                   value={settings?.heading_color || "#f59e0b"}
                   onChange={(e) => setSettings(s => s ? { ...s, heading_color: e.target.value } : null)}
                   className="w-16 h-10 p-1 cursor-pointer"
+                  disabled={isSaving}
                 />
               </div>
             </div>
@@ -369,6 +508,7 @@ export function AdminSettings() {
               value={settings?.upi_id || ""}
               onChange={(e) => setSettings(s => s ? { ...s, upi_id: e.target.value } : null)}
               className="bg-input text-foreground"
+              disabled={isSaving}
             />
           </div>
           <div>
@@ -378,6 +518,7 @@ export function AdminSettings() {
               accept="image/*"
               onChange={(e) => setQrFile(e.target.files?.[0] || null)}
               className="bg-input text-foreground"
+              disabled={isSaving}
             />
             {settings?.qr_code_url && (
               <div className="mt-4">
@@ -407,6 +548,7 @@ export function AdminSettings() {
                 value={settings?.social_twitter || ""}
                 onChange={(e) => setSettings(s => s ? { ...s, social_twitter: e.target.value } : null)}
                 className="bg-input text-foreground"
+                disabled={isSaving}
               />
             </div>
             <div>
@@ -416,6 +558,7 @@ export function AdminSettings() {
                 value={settings?.social_linkedin || ""}
                 onChange={(e) => setSettings(s => s ? { ...s, social_linkedin: e.target.value } : null)}
                 className="bg-input text-foreground"
+                disabled={isSaving}
               />
             </div>
             <div>
@@ -425,6 +568,7 @@ export function AdminSettings() {
                 value={settings?.social_youtube || ""}
                 onChange={(e) => setSettings(s => s ? { ...s, social_youtube: e.target.value } : null)}
                 className="bg-input text-foreground"
+                disabled={isSaving}
               />
             </div>
           </div>
@@ -435,13 +579,19 @@ export function AdminSettings() {
         onClick={handleSave} 
         disabled={isSaving}
         className="bg-primary hover:bg-primary/90 text-primary-foreground"
+        size="lg"
       >
         {isSaving ? (
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          <>
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            Saving...
+          </>
         ) : (
-          <Save className="h-4 w-4 mr-2" />
+          <>
+            <Save className="h-4 w-4 mr-2" />
+            Save All Settings
+          </>
         )}
-        Save All Settings
       </Button>
     </div>
   )
