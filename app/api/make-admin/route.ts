@@ -73,6 +73,14 @@ export async function POST(request: Request) {
         }, { status: 500 })
       }
 
+      // Update user metadata with is_admin flag for JWT
+      await supabase.auth.admin.updateUserById(authUser.id, {
+        user_metadata: {
+          ...authUser.user_metadata,
+          is_admin: true
+        }
+      })
+
       return NextResponse.json({ 
         success: true, 
         message: `Created profile and made ${email} an admin! Please logout and login again.`
@@ -99,6 +107,14 @@ export async function POST(request: Request) {
         error: "Failed to update profile: " + updateError.message 
       }, { status: 500 })
     }
+
+    // Also update user metadata with is_admin flag for JWT
+    await supabase.auth.admin.updateUserById(authUser.id, {
+      user_metadata: {
+        ...authUser.user_metadata,
+        is_admin: true
+      }
+    })
 
     return NextResponse.json({ 
       success: true, 
