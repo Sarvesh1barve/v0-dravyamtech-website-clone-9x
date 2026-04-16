@@ -170,54 +170,59 @@ export function AdminSettings() {
         }
       }
 
-      // Update settings in database
-      const { error, data } = await supabase
-        .from("site_settings")
-        .upsert({
-          id: settings.id || undefined,
-          site_name: settings.site_name,
-          site_tagline: settings.site_tagline,
-          site_description: settings.site_description,
-          logo_url: logoUrl,
-          contact_email: settings.contact_email,
-          contact_phone: settings.contact_phone,
-          contact_address: settings.contact_address,
-          hero_title: settings.hero_title,
-          hero_highlight: settings.hero_highlight,
-          hero_description: settings.hero_description,
-          about_title: settings.about_title,
-          about_description: settings.about_description,
-          what_we_do_title: settings.what_we_do_title,
-          what_we_do_items: settings.what_we_do_items,
-          how_we_work_title: settings.how_we_work_title,
-          how_we_work_items: settings.how_we_work_items,
-          primary_color: settings.primary_color,
-          secondary_color: settings.secondary_color,
-          accent_color: settings.accent_color,
-          text_color: settings.text_color,
-          heading_color: settings.heading_color,
-          upi_id: settings.upi_id,
-          qr_code_url: qrCodeUrl,
-          social_twitter: settings.social_twitter,
-          social_linkedin: settings.social_linkedin,
-          social_youtube: settings.social_youtube,
-          updated_at: new Date().toISOString()
+      // Call API endpoint with service role key
+      const settingsPayload = {
+        id: settings.id,
+        site_name: settings.site_name,
+        site_tagline: settings.site_tagline,
+        site_description: settings.site_description,
+        logo_url: logoUrl,
+        contact_email: settings.contact_email,
+        contact_phone: settings.contact_phone,
+        contact_address: settings.contact_address,
+        hero_title: settings.hero_title,
+        hero_highlight: settings.hero_highlight,
+        hero_description: settings.hero_description,
+        about_title: settings.about_title,
+        about_description: settings.about_description,
+        what_we_do_title: settings.what_we_do_title,
+        what_we_do_items: settings.what_we_do_items,
+        how_we_work_title: settings.how_we_work_title,
+        how_we_work_items: settings.how_we_work_items,
+        primary_color: settings.primary_color,
+        secondary_color: settings.secondary_color,
+        accent_color: settings.accent_color,
+        text_color: settings.text_color,
+        heading_color: settings.heading_color,
+        upi_id: settings.upi_id,
+        qr_code_url: qrCodeUrl,
+        social_twitter: settings.social_twitter,
+        social_linkedin: settings.social_linkedin,
+        social_youtube: settings.social_youtube,
+        updated_at: new Date().toISOString()
+      }
+
+      console.log("[v0] Calling settings API with:", settingsPayload)
+
+      const response = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "upsert",
+          data: settingsPayload
         })
-        .select()
-        .single()
+      })
 
-      if (error) {
-        console.error("[v0] Save error:", error)
-        toast.error(`Failed to save: ${error.message}`)
-        setIsSaving(false)
-        return
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to save settings")
       }
 
-      // Update local state with saved data
-      if (data) {
-        setSettings(data)
+      const result = await response.json()
+      if (result.data) {
+        setSettings(result.data)
       }
-      
+
       setLogoFile(null)
       setQrFile(null)
       

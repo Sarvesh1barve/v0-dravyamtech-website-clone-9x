@@ -75,19 +75,24 @@ export function AdminUsers() {
   async function toggleAdmin(userId: string, currentValue: boolean) {
     try {
       console.log("[v0] Toggling admin status for:", userId)
-      const { error } = await supabase
-        .from("profiles")
-        .update({ is_admin: !currentValue, updated_at: new Date().toISOString() })
-        .eq("id", userId)
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update",
+          userId,
+          data: { is_admin: !currentValue }
+        })
+      })
 
-      if (error) {
-        console.error("[v0] Toggle admin error:", error)
-        toast.error(`Failed to update user: ${error.message}`)
-      } else {
-        console.log("[v0] Admin status toggled")
-        toast.success(`User ${!currentValue ? "promoted to" : "removed from"} admin`)
-        fetchUsers()
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to update user")
       }
+
+      console.log("[v0] Admin status toggled")
+      toast.success(`User ${!currentValue ? "promoted to" : "removed from"} admin`)
+      fetchUsers()
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to update user"
       console.error("[v0] Toggle admin exception:", err)
@@ -102,23 +107,27 @@ export function AdminUsers() {
         ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
         : null
 
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          is_subscribed: !currentValue,
-          subscription_expires_at: newExpiry,
-          updated_at: new Date().toISOString()
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update",
+          userId,
+          data: {
+            is_subscribed: !currentValue,
+            subscription_expires_at: newExpiry
+          }
         })
-        .eq("id", userId)
+      })
 
-      if (error) {
-        console.error("[v0] Toggle subscription error:", error)
-        toast.error(`Failed to update subscription: ${error.message}`)
-      } else {
-        console.log("[v0] Subscription toggled")
-        toast.success(`Subscription ${!currentValue ? "activated" : "deactivated"}`)
-        fetchUsers()
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to update subscription")
       }
+
+      console.log("[v0] Subscription toggled")
+      toast.success(`Subscription ${!currentValue ? "activated" : "deactivated"}`)
+      fetchUsers()
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to update subscription"
       console.error("[v0] Toggle subscription exception:", err)

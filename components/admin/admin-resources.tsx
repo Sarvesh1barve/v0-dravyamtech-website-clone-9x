@@ -99,64 +99,70 @@ export function AdminResources() {
     try {
       if (editingResource) {
         console.log("[v0] Updating resource:", editingResource.id, formData)
-        const { error, data } = await supabase
-          .from("resources")
-          .update({
-            title: formData.title,
-            description: formData.description || null,
-            video_url: formData.video_url || null,
-            thumbnail_url: formData.thumbnail_url || null,
-            category: formData.category,
-            is_locked: formData.is_locked,
-            updated_at: new Date().toISOString()
+        const response = await fetch("/api/admin/resources", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "update",
+            id: editingResource.id,
+            data: {
+              title: formData.title,
+              description: formData.description || null,
+              video_url: formData.video_url || null,
+              thumbnail_url: formData.thumbnail_url || null,
+              category: formData.category,
+              is_locked: formData.is_locked,
+              updated_at: new Date().toISOString()
+            }
           })
-          .eq("id", editingResource.id)
-          .select()
-          .single()
+        })
 
-        if (error) {
-          console.error("[v0] Update error:", error)
-          toast.error(`Failed to update resource: ${error.message}`)
-        } else {
-          console.log("[v0] Resource updated successfully")
-          toast.success("Resource updated successfully!")
-          fetchResources()
-          setIsDialogOpen(false)
-          
-          // Revalidate resources pages
-          await fetch("/api/revalidate?tag=resources-list").catch(err => 
-            console.error("[v0] Revalidation error:", err)
-          )
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || "Failed to update resource")
         }
+
+        console.log("[v0] Resource updated successfully")
+        toast.success("Resource updated successfully!")
+        fetchResources()
+        setIsDialogOpen(false)
+        
+        // Revalidate resources pages
+        await fetch("/api/revalidate?tag=resources-list").catch(err => 
+          console.error("[v0] Revalidation error:", err)
+        )
       } else {
         console.log("[v0] Creating new resource:", formData)
-        const { error, data } = await supabase
-          .from("resources")
-          .insert({
-            title: formData.title,
-            description: formData.description || null,
-            video_url: formData.video_url || null,
-            thumbnail_url: formData.thumbnail_url || null,
-            category: formData.category,
-            is_locked: formData.is_locked
+        const response = await fetch("/api/admin/resources", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "create",
+            data: {
+              title: formData.title,
+              description: formData.description || null,
+              video_url: formData.video_url || null,
+              thumbnail_url: formData.thumbnail_url || null,
+              category: formData.category,
+              is_locked: formData.is_locked
+            }
           })
-          .select()
-          .single()
+        })
 
-        if (error) {
-          console.error("[v0] Insert error:", error)
-          toast.error(`Failed to create resource: ${error.message}`)
-        } else {
-          console.log("[v0] Resource created successfully")
-          toast.success("Resource created successfully!")
-          fetchResources()
-          setIsDialogOpen(false)
-          
-          // Revalidate resources pages
-          await fetch("/api/revalidate?tag=resources-list").catch(err => 
-            console.error("[v0] Revalidation error:", err)
-          )
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || "Failed to create resource")
         }
+
+        console.log("[v0] Resource created successfully")
+        toast.success("Resource created successfully!")
+        fetchResources()
+        setIsDialogOpen(false)
+        
+        // Revalidate resources pages
+        await fetch("/api/revalidate?tag=resources-list").catch(err => 
+          console.error("[v0] Revalidation error:", err)
+        )
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "An error occurred"
@@ -170,13 +176,29 @@ export function AdminResources() {
   async function handleDelete(id: string) {
     if (!confirm("Are you sure you want to delete this resource?")) return
 
-    const { error } = await supabase
-      .from("resources")
-      .delete()
-      .eq("id", id)
+    try {
+      const response = await fetch("/api/admin/resources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "delete",
+          id
+        })
+      })
 
-    if (error) {
-      toast.error("Failed to delete resource")
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to delete resource")
+      }
+
+      toast.success("Resource deleted successfully!")
+      fetchResources()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to delete resource"
+      console.error("[v0] Delete error:", err)
+      toast.error(msg)
+    }
+  }
     } else {
       toast.success("Resource deleted successfully!")
       fetchResources()

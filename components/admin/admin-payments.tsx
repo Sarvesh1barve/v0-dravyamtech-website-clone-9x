@@ -69,34 +69,21 @@ export function AdminPayments() {
   async function updatePaymentStatus(paymentId: string, newStatus: string, userId: string) {
     try {
       console.log("[v0] Updating payment status:", paymentId, "->", newStatus)
-      const { error } = await supabase
-        .from("payments")
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq("id", paymentId)
+      
+      const response = await fetch("/api/admin/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_status",
+          paymentId,
+          status: newStatus,
+          userId
+        })
+      })
 
-      if (error) {
-        console.error("[v0] Payment update error:", error)
-        toast.error(`Failed to update payment status: ${error.message}`)
-        return
-      }
-
-      // If approved, update user subscription
-      if (newStatus === "approved") {
-        console.log("[v0] Updating subscription for user:", userId)
-        const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-        const { error: subError } = await supabase
-          .from("profiles")
-          .update({
-            is_subscribed: true,
-            subscription_expires_at: expiryDate,
-            updated_at: new Date().toISOString()
-          })
-          .eq("id", userId)
-        
-        if (subError) {
-          console.error("[v0] Subscription update error:", subError)
-          toast.error(`Payment approved but subscription update failed: ${subError.message}`)
-        }
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to update payment status")
       }
 
       console.log("[v0] Payment status updated successfully")
