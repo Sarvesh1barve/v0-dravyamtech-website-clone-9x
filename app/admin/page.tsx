@@ -10,7 +10,9 @@ import { AdminSettings } from "@/components/admin/admin-settings"
 import { AdminResources } from "@/components/admin/admin-resources"
 import { AdminUsers } from "@/components/admin/admin-users"
 import { AdminPayments } from "@/components/admin/admin-payments"
-import { Settings, Video, Users, CreditCard, Loader2 } from "lucide-react"
+import { Settings, Video, Users, CreditCard, Loader2, HelpCircle } from "lucide-react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
 export default function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false)
@@ -62,28 +64,36 @@ export default function AdminPage() {
       <Header />
       <main className="flex-1 py-8 pt-24">
         <div className="container mx-auto px-4">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
-            <p className="text-muted-foreground mt-2">
-              Manage your website settings, resources, users, and payments
-            </p>
+          <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Admin Panel</h1>
+              <p className="text-muted-foreground mt-2">
+                Manage your website settings, resources, users, and payments
+              </p>
+            </div>
+            <Link href="/admin/guide">
+              <Button variant="outline" className="gap-2">
+                <HelpCircle className="h-4 w-4" />
+                View Guide
+              </Button>
+            </Link>
           </div>
 
           <Tabs defaultValue="settings" className="space-y-6">
-            <TabsList className="grid grid-cols-5 w-full max-w-4xl bg-secondary">
-              <TabsTrigger value="settings" className="flex items-center gap-2">
+            <TabsList className="flex flex-wrap gap-2 h-auto p-2 bg-secondary/50 rounded-lg w-full max-w-4xl">
+              <TabsTrigger value="settings" className="flex items-center gap-2 flex-1 min-w-[80px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <Settings className="h-4 w-4" />
                 <span className="hidden sm:inline">Settings</span>
               </TabsTrigger>
-              <TabsTrigger value="resources" className="flex items-center gap-2">
+              <TabsTrigger value="resources" className="flex items-center gap-2 flex-1 min-w-[80px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <Video className="h-4 w-4" />
                 <span className="hidden sm:inline">Resources</span>
               </TabsTrigger>
-              <TabsTrigger value="users" className="flex items-center gap-2">
+              <TabsTrigger value="users" className="flex items-center gap-2 flex-1 min-w-[80px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">Users</span>
               </TabsTrigger>
-              <TabsTrigger value="payments" className="flex items-center gap-2">
+              <TabsTrigger value="payments" className="flex items-center gap-2 flex-1 min-w-[80px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <CreditCard className="h-4 w-4" />
                 <span className="hidden sm:inline">Payments</span>
               </TabsTrigger>

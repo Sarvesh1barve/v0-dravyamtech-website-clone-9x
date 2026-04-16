@@ -110,19 +110,19 @@ export function DashboardContent({
       <h1 className="text-3xl font-bold text-foreground mb-8">Dashboard</h1>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-2 mb-8 border-b border-border pb-4">
+      <div className="flex overflow-x-auto gap-2 mb-8 border-b border-border pb-4 scrollbar-hide">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
               activeTab === tab.id
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary"
             }`}
           >
             <tab.icon className="w-4 h-4" />
-            {tab.label}
+            <span className="hidden sm:inline">{tab.label}</span>
           </button>
         ))}
       </div>
@@ -244,39 +244,38 @@ export function DashboardContent({
               <p className="text-muted-foreground">No payment history yet.</p>
             </div>
           ) : (
-            <div className="bg-card border border-border rounded-xl overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-secondary">
-                  <tr>
-                    <th className="text-left p-4 text-sm font-medium text-muted-foreground">Date</th>
-                    <th className="text-left p-4 text-sm font-medium text-muted-foreground">Type</th>
-                    <th className="text-left p-4 text-sm font-medium text-muted-foreground">Amount</th>
-                    <th className="text-left p-4 text-sm font-medium text-muted-foreground">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {payments.map((payment) => (
-                    <tr key={payment.id} className="border-t border-border">
-                      <td className="p-4 text-sm text-foreground">
+            <div className="space-y-4">
+              {payments.map((payment) => (
+                <div key={payment.id} className="bg-card border border-border rounded-xl p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex-1 min-w-[120px]">
+                      <p className="text-xs text-muted-foreground">Date</p>
+                      <p className="text-sm text-foreground font-medium">
                         {new Date(payment.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="p-4 text-sm text-foreground capitalize">{payment.payment_type}</td>
-                      <td className="p-4 text-sm text-foreground">₹{payment.amount}</td>
-                      <td className="p-4">
-                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                          payment.status === "completed" 
-                            ? "bg-green-500/20 text-green-500"
-                            : payment.status === "pending"
-                            ? "bg-yellow-500/20 text-yellow-500"
-                            : "bg-red-500/20 text-red-500"
-                        }`}>
-                          {payment.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </p>
+                    </div>
+                    <div className="flex-1 min-w-[100px]">
+                      <p className="text-xs text-muted-foreground">Type</p>
+                      <p className="text-sm text-foreground font-medium capitalize">{payment.payment_type}</p>
+                    </div>
+                    <div className="flex-1 min-w-[80px]">
+                      <p className="text-xs text-muted-foreground">Amount</p>
+                      <p className="text-sm text-foreground font-medium">₹{payment.amount}</p>
+                    </div>
+                    <div>
+                      <span className={`text-xs font-medium px-3 py-1 rounded-full ${
+                        payment.status === "completed" 
+                          ? "bg-green-500/20 text-green-500"
+                          : payment.status === "pending"
+                          ? "bg-yellow-500/20 text-yellow-500"
+                          : "bg-red-500/20 text-red-500"
+                      }`}>
+                        {payment.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
