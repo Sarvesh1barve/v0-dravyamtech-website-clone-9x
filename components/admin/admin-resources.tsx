@@ -199,11 +199,6 @@ export function AdminResources() {
       toast.error(msg)
     }
   }
-    } else {
-      toast.success("Resource deleted successfully!")
-      fetchResources()
-    }
-  }
 
   if (isLoading) {
     return (
