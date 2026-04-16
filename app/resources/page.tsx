@@ -8,6 +8,8 @@ export const metadata = {
   description: "Access our library of trading education videos, tutorials, and resources.",
 }
 
+export const revalidate = 60
+
 export default async function ResourcesPage() {
   const supabase = await createClient()
   
