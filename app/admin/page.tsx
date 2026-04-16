@@ -14,9 +14,6 @@ import { Settings, Video, Users, CreditCard, Loader2, HelpCircle } from "lucide-
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
-// Prevent prerendering - admin pages should only render at runtime
-export const revalidate = 0
-
 export default function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
