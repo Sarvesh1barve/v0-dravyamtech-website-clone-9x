@@ -7,7 +7,7 @@ import Image from "next/image"
 import { Menu, X, User, LogOut, Shield, Home, Info, Package, BookOpen, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
-import type { User as SupabaseUser } from "@supabase/supabase-js"
+import type { User as SupabaseUser, SupabaseClient } from "@supabase/supabase-js"
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -16,7 +16,13 @@ export function Header() {
   const [isLoading, setIsLoading] = useState(true)
   const pathname = usePathname()
   const router = useRouter()
-  const supabase = createClient()
+
+  // Create Supabase client in effect to avoid build-time initialization
+  const [supabase, setSupabase] = useState<SupabaseClient | null>(null)
+
+  useEffect(() => {
+    setSupabase(createClient())
+  }, [])
 
   // Fetch admin status from API (more reliable than client-side query)
   const checkAdminStatus = useCallback(async () => {
@@ -35,6 +41,8 @@ export function Header() {
   }, [])
 
   useEffect(() => {
+    if (!supabase) return
+
     const initAuth = async () => {
       setIsLoading(true)
       try {
@@ -87,6 +95,7 @@ export function Header() {
   }, [mobileMenuOpen])
 
   const handleSignOut = async () => {
+    if (!supabase) return
     await supabase.auth.signOut()
     setUser(null)
     setIsAdmin(false)
