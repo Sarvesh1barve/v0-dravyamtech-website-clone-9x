@@ -1,8 +1,69 @@
 import { createClient } from "@supabase/supabase-js"
+import { createServerClient } from "@supabase/ssr"
 import { NextRequest, NextResponse } from "next/server"
+import { cookies } from "next/headers"
+
+async function verifyAdminAuth() {
+  try {
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll() {}
+        }
+      }
+    )
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return { isAdmin: false, user: null }
+    }
+
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: { persistSession: false }
+      }
+    )
+
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError) {
+      console.error("[users-api] Admin check error:", profileError)
+      return { isAdmin: false, user }
+    }
+
+    return { isAdmin: profile?.is_admin || false, user }
+  } catch (error) {
+    console.error("[users-api] Auth verification exception:", error)
+    return { isAdmin: false, user: null }
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
+    // Verify admin authentication
+    const { isAdmin, user } = await verifyAdminAuth()
+    
+    if (!isAdmin || !user) {
+      console.warn("[users-api] Unauthorized attempt")
+      return NextResponse.json(
+        { error: "Unauthorized - admin access required" },
+        { status: 403 }
+      )
+    }
+
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -14,7 +75,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { action, userId, data } = body
 
-    console.log("[v0] Users API:", action, userId)
+    console.log("[v0] Users API:", action, userId, "by user:", user.id)
 
     if (action === "update") {
       const updateData = {
