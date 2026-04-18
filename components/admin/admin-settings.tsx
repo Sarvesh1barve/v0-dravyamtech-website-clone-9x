@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Loader2, Save, Upload, AlertCircle } from "lucide-react"
+import { Loader2, Save, Upload, AlertCircle, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 
 interface SiteSettings {
@@ -23,6 +23,9 @@ interface SiteSettings {
   hero_title: string
   hero_highlight: string
   hero_description: string
+  hero_background_color: string
+  hero_text_color: string
+  hero_cta_text: string
   about_title: string
   about_description: string | null
   what_we_do_title: string
@@ -32,6 +35,8 @@ interface SiteSettings {
   primary_color: string
   secondary_color: string
   accent_color: string
+  theme_primary_color: string
+  theme_accent_color: string
   text_color: string
   heading_color: string
   upi_id: string | null
@@ -46,6 +51,7 @@ export function AdminSettings() {
   const [settings, setSettings] = useState<SiteSettings | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [qrFile, setQrFile] = useState<File | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -60,6 +66,36 @@ export function AdminSettings() {
     if (!supabase) return
     fetchSettings()
   }, [supabase])
+
+  async function handleReset() {
+    if (!confirm("Are you sure you want to reset all settings to default values? This cannot be undone.")) {
+      return
+    }
+
+    setIsResetting(true)
+    try {
+      const response = await fetch("/api/admin/reset-settings", {
+        method: "POST",
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to reset settings")
+      }
+
+      toast.success("Settings reset to defaults!")
+      
+      // Refresh to show new defaults
+      await fetchSettings()
+      router.refresh()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "An error occurred while resetting"
+      console.error("[v0] Reset exception:", err)
+      toast.error(msg)
+    } finally {
+      setIsResetting(false)
+    }
+  }
 
   async function fetchSettings() {
     if (!supabase) return
@@ -335,7 +371,7 @@ export function AdminSettings() {
       <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle className="text-foreground">Hero Section</CardTitle>
-          <CardDescription>Customize home page hero content</CardDescription>
+          <CardDescription>Customize home page hero content and styling</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
@@ -349,23 +385,82 @@ export function AdminSettings() {
               />
             </div>
             <div>
-              <Label className="text-foreground">Hero Highlight (colored part)</Label>
+              <Label className="text-foreground">Hero CTA Button Text</Label>
               <Input
-                value={settings?.hero_highlight || ""}
-                onChange={(e) => setSettings(s => s ? { ...s, hero_highlight: e.target.value } : null)}
+                value={settings?.hero_cta_text || "Explore Products"}
+                onChange={(e) => setSettings(s => s ? { ...s, hero_cta_text: e.target.value } : null)}
                 className="bg-input text-foreground"
                 disabled={isSaving}
               />
             </div>
           </div>
           <div>
-            <Label className="text-foreground">Hero Description</Label>
+            <Label className="text-foreground">Hero Subtitle</Label>
             <Textarea
               value={settings?.hero_description || ""}
               onChange={(e) => setSettings(s => s ? { ...s, hero_description: e.target.value } : null)}
               className="bg-input text-foreground"
               disabled={isSaving}
             />
+          </div>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div>
+              <Label className="text-foreground">Background Color</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="color"
+                  value={settings?.hero_background_color || "#000000"}
+                  onChange={(e) => setSettings(s => s ? { ...s, hero_background_color: e.target.value } : null)}
+                  className="h-10 w-14 bg-input"
+                  disabled={isSaving}
+                />
+                <Input
+                  type="text"
+                  value={settings?.hero_background_color || "#000000"}
+                  onChange={(e) => setSettings(s => s ? { ...s, hero_background_color: e.target.value } : null)}
+                  className="bg-input text-foreground flex-1"
+                  disabled={isSaving}
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-foreground">Text Color</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="color"
+                  value={settings?.hero_text_color || "#ffffff"}
+                  onChange={(e) => setSettings(s => s ? { ...s, hero_text_color: e.target.value } : null)}
+                  className="h-10 w-14 bg-input"
+                  disabled={isSaving}
+                />
+                <Input
+                  type="text"
+                  value={settings?.hero_text_color || "#ffffff"}
+                  onChange={(e) => setSettings(s => s ? { ...s, hero_text_color: e.target.value } : null)}
+                  className="bg-input text-foreground flex-1"
+                  disabled={isSaving}
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-foreground">Primary Color (Accent)</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="color"
+                  value={settings?.theme_primary_color || "#3b82f6"}
+                  onChange={(e) => setSettings(s => s ? { ...s, theme_primary_color: e.target.value } : null)}
+                  className="h-10 w-14 bg-input"
+                  disabled={isSaving}
+                />
+                <Input
+                  type="text"
+                  value={settings?.theme_primary_color || "#3b82f6"}
+                  onChange={(e) => setSettings(s => s ? { ...s, theme_primary_color: e.target.value } : null)}
+                  className="bg-input text-foreground flex-1"
+                  disabled={isSaving}
+                />
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -586,24 +681,46 @@ export function AdminSettings() {
         </CardContent>
       </Card>
 
-      <Button 
-        onClick={handleSave} 
-        disabled={isSaving}
-        className="bg-primary hover:bg-primary/90 text-primary-foreground"
-        size="lg"
-      >
-        {isSaving ? (
-          <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Saving...
-          </>
-        ) : (
-          <>
-            <Save className="h-4 w-4 mr-2" />
-            Save All Settings
-          </>
-        )}
-      </Button>
+      <div className="flex gap-3">
+        <Button 
+          onClick={handleSave} 
+          disabled={isSaving || isResetting}
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          size="lg"
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4 mr-2" />
+              Save All Settings
+            </>
+          )}
+        </Button>
+        
+        <Button 
+          onClick={handleReset} 
+          disabled={isSaving || isResetting}
+          variant="outline"
+          className="border-destructive text-destructive hover:bg-destructive/10"
+          size="lg"
+        >
+          {isResetting ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Resetting...
+            </>
+          ) : (
+            <>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reset to Default
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   )
 }

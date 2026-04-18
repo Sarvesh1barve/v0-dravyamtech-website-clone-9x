@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { amount, transaction_id, payment_method = "upi" } = body
+    const { amount, transaction_id, payment_method = "upi", proof_url } = body
 
     if (!amount || !transaction_id) {
       return NextResponse.json(
@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
         amount,
         transaction_id,
         payment_method,
+        proof_url: proof_url || null,
         status: "pending"
       })
       .select()

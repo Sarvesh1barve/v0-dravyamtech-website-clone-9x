@@ -3,12 +3,20 @@
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useSettings } from "@/hooks/useSettings"
 
 export function Hero() {
+  const { settings } = useSettings()
+
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <section 
+      className="relative min-h-screen flex items-center justify-center overflow-hidden transition-colors duration-500"
+      style={{
+        backgroundColor: settings.hero_background_color,
+      }}
+    >
       {/* Background with candlestick chart pattern */}
-      <div className="absolute inset-0 bg-background">
+      <div className="absolute inset-0">
         {/* Animated candlestick chart SVG */}
         <svg 
           className="absolute inset-0 w-full h-full opacity-30"
@@ -18,13 +26,13 @@ export function Hero() {
           {/* Grid lines */}
           <defs>
             <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-              <path d="M 60 0 L 0 0 0 60" fill="none" stroke="currentColor" strokeWidth="0.3" className="text-border/20"/>
+              <path d="M 60 0 L 0 0 0 60" fill="none" stroke="currentColor" strokeWidth="0.3" opacity="0.2"/>
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#grid)" />
           
           {/* Candlestick wicks */}
-          <g className="text-muted-foreground/40" stroke="currentColor" strokeWidth="2">
+          <g stroke="currentColor" strokeWidth="2" opacity="0.4">
             <line x1="100" y1="300" x2="100" y2="550" />
             <line x1="180" y1="280" x2="180" y2="500" />
             <line x1="260" y1="320" x2="260" y2="530" />
@@ -43,60 +51,70 @@ export function Hero() {
           
           {/* Candlestick bodies - mix of green and red */}
           <g>
-            <rect x="88" y="380" width="24" height="80" className="fill-red-500/50" rx="2" />
-            <rect x="168" y="350" width="24" height="70" className="fill-emerald-500/50" rx="2" />
-            <rect x="248" y="400" width="24" height="60" className="fill-red-500/50" rx="2" />
-            <rect x="328" y="320" width="24" height="80" className="fill-emerald-500/50" rx="2" />
-            <rect x="408" y="340" width="24" height="60" className="fill-emerald-500/50" rx="2" />
-            <rect x="488" y="300" width="24" height="60" className="fill-emerald-500/50" rx="2" />
-            <rect x="568" y="280" width="24" height="50" className="fill-red-500/50" rx="2" />
-            <rect x="648" y="300" width="24" height="60" className="fill-emerald-500/50" rx="2" />
-            <rect x="728" y="280" width="24" height="50" className="fill-emerald-500/50" rx="2" />
-            <rect x="808" y="250" width="24" height="50" className="fill-emerald-500/50" rx="2" />
-            <rect x="888" y="230" width="24" height="40" className="fill-emerald-500/50" rx="2" />
-            <rect x="968" y="210" width="24" height="40" className="fill-emerald-500/50" rx="2" />
-            <rect x="1048" y="190" width="24" height="40" className="fill-emerald-500/50" rx="2" />
-            <rect x="1128" y="180" width="24" height="35" className="fill-emerald-500/50" rx="2" />
+            <rect x="88" y="380" width="24" height="80" fill="rgb(239, 68, 68)" opacity="0.5" rx="2" />
+            <rect x="168" y="350" width="24" height="70" fill="rgb(16, 185, 129)" opacity="0.5" rx="2" />
+            <rect x="248" y="400" width="24" height="60" fill="rgb(239, 68, 68)" opacity="0.5" rx="2" />
+            <rect x="328" y="320" width="24" height="80" fill="rgb(16, 185, 129)" opacity="0.5" rx="2" />
+            <rect x="408" y="340" width="24" height="60" fill="rgb(16, 185, 129)" opacity="0.5" rx="2" />
+            <rect x="488" y="300" width="24" height="60" fill="rgb(16, 185, 129)" opacity="0.5" rx="2" />
+            <rect x="568" y="280" width="24" height="50" fill="rgb(239, 68, 68)" opacity="0.5" rx="2" />
+            <rect x="648" y="300" width="24" height="60" fill="rgb(16, 185, 129)" opacity="0.5" rx="2" />
+            <rect x="728" y="280" width="24" height="50" fill="rgb(16, 185, 129)" opacity="0.5" rx="2" />
+            <rect x="808" y="250" width="24" height="50" fill="rgb(16, 185, 129)" opacity="0.5" rx="2" />
+            <rect x="888" y="230" width="24" height="40" fill="rgb(16, 185, 129)" opacity="0.5" rx="2" />
+            <rect x="968" y="210" width="24" height="40" fill="rgb(16, 185, 129)" opacity="0.5" rx="2" />
+            <rect x="1048" y="190" width="24" height="40" fill="rgb(16, 185, 129)" opacity="0.5" rx="2" />
+            <rect x="1128" y="180" width="24" height="35" fill="rgb(16, 185, 129)" opacity="0.5" rx="2" />
           </g>
           
           {/* Upward trend line */}
           <path 
             d="M 50 600 Q 200 530, 350 470 T 650 350 T 950 230 T 1150 150" 
             fill="none" 
-            stroke="url(#trendGradient)" 
+            stroke="rgb(16, 185, 129)" 
             strokeWidth="3"
             strokeLinecap="round"
-            className="opacity-70"
+            opacity="0.7"
           />
-          
-          <defs>
-            <linearGradient id="trendGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="rgb(16, 185, 129)" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="rgb(16, 185, 129)" stopOpacity="0.9" />
-            </linearGradient>
-          </defs>
         </svg>
         
         {/* Radial gradient overlay for depth */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,var(--background)_70%)]" />
+        <div 
+          className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-opacity-100 transition-all duration-500"
+          style={{
+            background: `radial-gradient(ellipse at center, transparent 0%, ${settings.hero_background_color}80 70%)`
+          }}
+        />
       </div>
 
       {/* Content */}
       <div className="relative z-10 mx-auto max-w-4xl px-6 py-32 text-center lg:py-40">
-        <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl text-balance">
-          Fintech That Thinks{" "}
-          <span className="text-primary">Beyond Numbers</span>
+        <h1 
+          className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl text-balance transition-colors duration-500"
+          style={{ color: settings.hero_text_color }}
+        >
+          {settings.hero_title}{" "}
+          <span style={{ color: settings.theme_primary_color }}>Beyond Numbers</span>
         </h1>
         
-        <p className="mt-6 text-lg leading-relaxed text-muted-foreground max-w-2xl mx-auto text-balance">
-          Building research-driven trading systems, advanced analytics, and 
-          education platforms for disciplined market participation
+        <p 
+          className="mt-6 text-lg leading-relaxed max-w-2xl mx-auto text-balance transition-colors duration-500"
+          style={{ color: `${settings.hero_text_color}cc` }}
+        >
+          {settings.hero_subtitle}
         </p>
         
         <div className="mt-10 flex items-center justify-center gap-x-4">
           <Link href="/products">
-            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
-              Explore Our Work
+            <Button 
+              size="lg" 
+              className="gap-2 transition-colors duration-500"
+              style={{
+                backgroundColor: settings.theme_primary_color,
+                color: 'white'
+              }}
+            >
+              {settings.hero_cta_text}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
@@ -104,7 +122,12 @@ export function Hero() {
       </div>
 
       {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
+      <div 
+        className="absolute bottom-0 left-0 right-0 h-32 transition-all duration-500"
+        style={{
+          background: `linear-gradient(to top, ${settings.hero_background_color}, transparent)`
+        }}
+      />
     </section>
   )
 }
