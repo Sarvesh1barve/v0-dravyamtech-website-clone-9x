@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, CreditCard, CheckCircle, XCircle, Clock } from "lucide-react"
+import { Loader2, CreditCard, CheckCircle, XCircle, Clock, Eye } from "lucide-react"
 import { toast } from "sonner"
 
 interface Payment {
@@ -17,6 +17,8 @@ interface Payment {
   amount: number
   payment_type: string
   transaction_id: string | null
+  payment_method: string | null
+  proof_url: string | null
   status: string
   created_at: string
   profiles?: {
@@ -33,6 +35,7 @@ export function AdminPayments() {
   const [isLoading, setIsLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState("all")
   const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null)
+  const [selectedProof, setSelectedProof] = useState<string | null>(null)
 
   useEffect(() => {
     setSupabase(createClient())
@@ -167,17 +170,19 @@ export function AdminPayments() {
         ) : (
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow className="border-border">
-                  <TableHead className="text-muted-foreground">User</TableHead>
-                  <TableHead className="text-muted-foreground">Type</TableHead>
-                  <TableHead className="text-muted-foreground">Amount</TableHead>
-                  <TableHead className="text-muted-foreground">Transaction ID</TableHead>
-                  <TableHead className="text-muted-foreground">Status</TableHead>
-                  <TableHead className="text-muted-foreground">Date</TableHead>
-                  <TableHead className="text-muted-foreground text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Transaction ID</TableHead>
+                <TableHead>Method</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Proof</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
               <TableBody>
                 {filteredPayments.map((payment) => (
                   <TableRow key={payment.id} className="border-border">
@@ -209,7 +214,21 @@ export function AdminPayments() {
                     <TableCell className="text-muted-foreground">
                       {new Date(payment.created_at).toLocaleDateString()}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell>
+                      {payment.proof_url ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedProof(payment.proof_url)}
+                          className="text-blue-600 hover:text-blue-700"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View Proof
+                        </Button>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">No proof</span>
+                      )}
+                    </TableCell>
                       {payment.status === "pending" && (
                         <div className="flex justify-end gap-2">
                           <Button
@@ -267,9 +286,32 @@ export function AdminPayments() {
                 </p>
               </div>
             </CardContent>
+        </Card>
+      </div>
+
+      {/* Proof Modal */}
+      {selectedProof && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <Card className="bg-card max-w-2xl w-full">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Payment Proof</CardTitle>
+              <button
+                onClick={() => setSelectedProof(null)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                ✕
+              </button>
+            </CardHeader>
+            <CardContent>
+              <img 
+                src={selectedProof} 
+                alt="Payment proof" 
+                className="w-full h-auto rounded-lg border border-border"
+              />
+            </CardContent>
           </Card>
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   )
 }
