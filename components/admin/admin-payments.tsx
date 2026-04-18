@@ -229,6 +229,7 @@ export function AdminPayments() {
                         <span className="text-muted-foreground text-sm">No proof</span>
                       )}
                     </TableCell>
+                    <TableCell className="text-right">
                       {payment.status === "pending" && (
                         <div className="flex justify-end gap-2">
                           <Button
