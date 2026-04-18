@@ -210,8 +210,11 @@ export function AdminPayments() {
                     <TableCell className="text-muted-foreground font-mono text-sm">
                       {payment.transaction_id || "-"}
                     </TableCell>
+                    <TableCell className="text-muted-foreground capitalize">
+                      {payment.payment_method || "upi"}
+                    </TableCell>
                     <TableCell>{getStatusBadge(payment.status)}</TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell>
                       {new Date(payment.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
