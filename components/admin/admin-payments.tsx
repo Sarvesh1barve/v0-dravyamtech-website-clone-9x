@@ -292,7 +292,6 @@ export function AdminPayments() {
             </CardContent>
           </Card>
         </div>
-      </div>
 
       {/* Proof Modal */}
       {selectedProof && (
