@@ -290,7 +290,8 @@ export function AdminPayments() {
                 </p>
               </div>
             </CardContent>
-        </Card>
+          </Card>
+        </div>
       </div>
 
       {/* Proof Modal */}
