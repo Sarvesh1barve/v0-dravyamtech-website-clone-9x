@@ -318,5 +318,5 @@ export function AdminPayments() {
         </div>
       )}
     </Card>
-    )
-  }
+  )
+}
