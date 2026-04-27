@@ -17,19 +17,26 @@ import { Button } from "@/components/ui/button"
 export default function AdminContent() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
-    async function checkAdmin() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        router.push("/login")
-        return
-      }
+    setMounted(true)
+  }, [])
 
+  useEffect(() => {
+    if (!mounted) return
+
+    async function checkAdmin() {
       try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        
+        if (!user) {
+          router.push("/login")
+          return
+        }
+
         // Call the API which uses service role to bypass RLS
         const response = await fetch('/api/check-admin')
         const data = await response.json()
@@ -48,7 +55,7 @@ export default function AdminContent() {
     }
 
     checkAdmin()
-  }, [router])
+  }, [mounted, router])
 
   if (isLoading) {
     return (
