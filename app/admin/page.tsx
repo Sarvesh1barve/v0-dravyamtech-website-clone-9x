@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from 'react'
 import dynamic from 'next/dynamic'
 
 // Loading component
@@ -20,5 +21,9 @@ const AdminPageContent = dynamic(() => import('./admin-content'), {
 })
 
 export default function AdminPage() {
-  return <AdminPageContent />
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <AdminPageContent />
+    </Suspense>
+  )
 }
