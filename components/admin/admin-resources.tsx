@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Loader2, Plus, Pencil, Trash2, Video, Lock, Unlock, Upload, Link as LinkIcon, Image, Play } from "lucide-react"
+import { Loader2, Plus, Pencil, Trash2, Video, Lock, Unlock, Upload, Link as LinkIcon, Image as ImageIcon, Play } from "lucide-react"
 import { toast } from "sonner"
 
 interface Resource {
@@ -117,50 +117,47 @@ export function AdminResources() {
     const file = event.target.files?.[0]
     if (!file) return
 
+    // Validate file size upfront
+    const maxSize = type === "video" ? 500 * 1024 * 1024 : 10 * 1024 * 1024
+    if (file.size > maxSize) {
+      toast.error(type === "video" ? "Video too large (max 500MB)" : "Image too large (max 10MB)")
+      return
+    }
+
     setIsUploading(true)
     setUploadProgress(0)
 
     try {
-      const formData = new FormData()
-      formData.append("file", file)
-      formData.append("type", type)
+      const uploadFormData = new FormData()
+      uploadFormData.append("file", file)
+      uploadFormData.append("type", type)
 
-      const xhr = new XMLHttpRequest()
-
-      xhr.upload.addEventListener("progress", (e) => {
-        if (e.lengthComputable) {
-          const percentComplete = (e.loaded / e.total) * 100
-          setUploadProgress(percentComplete)
-        }
+      // Use fetch instead of XHR for simpler error handling
+      const response = await fetch("/api/admin/upload-resource-media", {
+        method: "POST",
+        body: uploadFormData,
       })
 
-      xhr.addEventListener("load", () => {
-        if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText)
-          if (type === "video") {
-            setFormData(prev => ({ ...prev, video_file_url: response.url }))
-            toast.success("Video uploaded successfully!")
-          } else {
-            setFormData(prev => ({ ...prev, thumbnail_file_url: response.url }))
-            toast.success("Thumbnail uploaded successfully!")
-          }
-          setIsUploading(false)
-        } else {
-          throw new Error("Upload failed")
-        }
-      })
+      const result = await response.json()
 
-      xhr.addEventListener("error", () => {
-        toast.error("Upload failed")
-        setIsUploading(false)
-      })
+      if (!response.ok) {
+        throw new Error(result.error || "Upload failed")
+      }
 
-      xhr.open("POST", "/api/admin/upload-resource-media")
-      xhr.send(formData)
+      if (type === "video") {
+        setFormData(prev => ({ ...prev, video_file_url: result.url }))
+        toast.success("Video uploaded successfully!")
+      } else {
+        setFormData(prev => ({ ...prev, thumbnail_file_url: result.url }))
+        toast.success("Thumbnail uploaded successfully!")
+      }
     } catch (error) {
       console.error("[v0] Upload error:", error)
-      toast.error("Failed to upload file")
+      const msg = error instanceof Error ? error.message : "Failed to upload file"
+      toast.error(msg)
+    } finally {
       setIsUploading(false)
+      setUploadProgress(0)
     }
   }
 
@@ -381,13 +378,17 @@ export function AdminResources() {
                         className="hidden"
                         id="video-upload"
                       />
-                      <label htmlFor="video-upload" className="cursor-pointer flex flex-col items-center">
-                        <Upload className="h-6 w-6 text-muted-foreground mb-2" />
+                      <label htmlFor="video-upload" className={`cursor-pointer flex flex-col items-center ${isUploading ? 'opacity-50' : ''}`}>
+                        {isUploading ? (
+                          <Loader2 className="h-6 w-6 text-primary animate-spin mb-2" />
+                        ) : (
+                          <Upload className="h-6 w-6 text-muted-foreground mb-2" />
+                        )}
                         <span className="text-sm text-muted-foreground">
-                          {isUploading ? `Uploading... ${Math.round(uploadProgress)}%` : "Click to upload video (MP4, WebM, OGG, MOV)"}
+                          {isUploading ? "Uploading video... please wait" : "Click to upload video (MP4, WebM, OGG, MOV)"}
                         </span>
+                        <span className="text-xs text-muted-foreground mt-1">Max 500MB</span>
                       </label>
-                      {isUploading && <div className="mt-2 w-full bg-secondary rounded h-1" style={{width: `${uploadProgress}%`}}></div>}
                     </div>
                     {formData.video_file_url && (
                       <div className="text-xs text-green-500 flex items-center gap-1">
@@ -412,7 +413,7 @@ export function AdminResources() {
               {/* Thumbnail Section */}
               <div className="space-y-3 border-t border-border pt-4">
                 <Label className="text-foreground font-semibold flex items-center gap-2">
-                  <Image className="h-4 w-4" /> Thumbnail *
+                  <ImageIcon className="h-4 w-4" /> Thumbnail *
                 </Label>
                 <Tabs defaultValue="url" className="w-full">
                   <TabsList className="grid w-full grid-cols-3 bg-secondary">
@@ -442,14 +443,25 @@ export function AdminResources() {
                         className="hidden"
                         id="thumbnail-upload"
                       />
-                      <label htmlFor="thumbnail-upload" className="cursor-pointer flex flex-col items-center">
-                        <Image className="h-6 w-6 text-muted-foreground mb-2" />
+                      <label htmlFor="thumbnail-upload" className={`cursor-pointer flex flex-col items-center ${isUploading ? 'opacity-50' : ''}`}>
+                        {isUploading ? (
+                          <Loader2 className="h-6 w-6 text-primary animate-spin mb-2" />
+                        ) : (
+                          <ImageIcon className="h-6 w-6 text-muted-foreground mb-2" />
+                        )}
                         <span className="text-sm text-muted-foreground">
-                          {isUploading ? `Uploading... ${Math.round(uploadProgress)}%` : "Click to upload thumbnail (JPEG, PNG, WebP)"}
+                          {isUploading ? "Uploading image... please wait" : "Click to upload thumbnail (JPEG, PNG, WebP)"}
                         </span>
+                        <span className="text-xs text-muted-foreground mt-1">Max 10MB</span>
                       </label>
-                      {isUploading && <div className="mt-2 w-full bg-secondary rounded h-1" style={{width: `${uploadProgress}%`}}></div>}
                     </div>
+                    {formData.thumbnail_file_url && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <img src={formData.thumbnail_file_url} alt="Thumbnail preview" className="h-12 w-12 object-cover rounded" />
+                        <span className="text-xs text-green-500">✓ Thumbnail uploaded</span>
+                      </div>
+                    )}
+                  </TabsContent>
                     {formData.thumbnail_file_url && (
                       <div className="text-xs text-green-500 flex items-center gap-1">
                         ✓ File uploaded: {formData.thumbnail_file_url.split('/').pop()?.slice(0, 20)}...
