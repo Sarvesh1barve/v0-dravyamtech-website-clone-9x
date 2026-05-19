@@ -13,14 +13,16 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)  // Start as false to show header immediately
   const pathname = usePathname()
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
 
   // Create Supabase client in effect to avoid build-time initialization
   const [supabase, setSupabase] = useState<SupabaseClient | null>(null)
 
   useEffect(() => {
+    setMounted(true)
     setSupabase(createClient())
   }, [])
 
@@ -41,10 +43,10 @@ export function Header() {
   }, [])
 
   useEffect(() => {
-    if (!supabase) return
+    if (!supabase || !mounted) return
 
     const initAuth = async () => {
-      setIsLoading(true)
+      // Don't set loading to true - header should render immediately
       try {
         const { data: { user } } = await supabase.auth.getUser()
         setUser(user)
@@ -54,8 +56,6 @@ export function Header() {
         }
       } catch {
         // Silently handle errors
-      } finally {
-        setIsLoading(false)
       }
     }
     

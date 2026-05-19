@@ -17,62 +17,101 @@ export type SiteSettings = {
 
 const DEFAULT_SETTINGS: SiteSettings = {
   id: 'default',
-  hero_title: 'Quantitative Research & Trading Systems',
-  hero_subtitle: 'Data-Driven Financial Intelligence',
-  hero_cta_text: 'Explore Products',
-  hero_background_color: '#000000',
-  hero_text_color: '#ffffff',
-  theme_primary_color: '#3b82f6',
+  hero_title: 'Fintech That Thinks',
+  hero_subtitle: 'Building research-driven trading systems, advanced analytics, and education platforms for disciplined market participation',
+  hero_cta_text: 'Explore Our Work',
+  hero_background_color: '#09090b',
+  hero_text_color: '#fafafa',
+  theme_primary_color: '#10b981',
   theme_accent_color: '#10b981',
   updated_at: new Date().toISOString(),
 }
 
+// Map database columns to our SiteSettings type
+function mapDatabaseToSettings(data: any): SiteSettings {
+  return {
+    id: data.id || 'default',
+    hero_title: data.hero_title || DEFAULT_SETTINGS.hero_title,
+    hero_subtitle: data.hero_description || DEFAULT_SETTINGS.hero_subtitle, // Database has hero_description
+    hero_cta_text: data.hero_cta_text || DEFAULT_SETTINGS.hero_cta_text,
+    hero_background_color: data.hero_background_color || '#09090b', // Default to dark
+    hero_text_color: data.text_color || DEFAULT_SETTINGS.hero_text_color, // Database has text_color
+    theme_primary_color: data.primary_color || DEFAULT_SETTINGS.theme_primary_color, // Database has primary_color
+    theme_accent_color: data.accent_color || DEFAULT_SETTINGS.theme_accent_color, // Database has accent_color
+    updated_at: data.updated_at || new Date().toISOString(),
+  }
+}
+
 export function useSettings() {
-  const [settings, setSettings] = useState<SiteSettings | null>(null)
+  // Initialize with defaults immediately for fast initial render
+  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    let isMounted = true
+    
+    async function fetchSettings() {
+      try {
+        const supabase = createClient()
+        
+        const { data, error: fetchError } = await supabase
+          .from('site_settings')
+          .select('*')
+          .single()
+
+        if (!isMounted) return
+
+        if (fetchError) {
+          console.error('[v0] Settings fetch error:', fetchError)
+          // Keep using defaults on error
+          return
+        }
+
+        if (data) {
+          setSettings(mapDatabaseToSettings(data))
+        }
+      } catch (err) {
+        if (!isMounted) return
+        const message = err instanceof Error ? err.message : 'Failed to fetch settings'
+        console.error('[v0] Settings error:', message)
+        setError(message)
+        // Keep using defaults on error
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
     fetchSettings()
+    
+    return () => {
+      isMounted = false
+    }
   }, [])
 
-  async function fetchSettings() {
+  const refreshSettings = async () => {
+    setIsLoading(true)
     try {
-      setIsLoading(true)
       const supabase = createClient()
-      
-      const { data, error: fetchError } = await supabase
+      const { data } = await supabase
         .from('site_settings')
         .select('*')
         .single()
-
-      if (fetchError) {
-        console.error('[v0] Settings fetch error:', fetchError)
-        setSettings(DEFAULT_SETTINGS)
-        return
-      }
-
+      
       if (data) {
-        setSettings(data as SiteSettings)
-      } else {
-        setSettings(DEFAULT_SETTINGS)
+        setSettings(mapDatabaseToSettings(data))
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch settings'
-      console.error('[v0] Settings error:', message)
-      setError(message)
-      setSettings(DEFAULT_SETTINGS)
+      console.error('[v0] Refresh error:', err)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const refreshSettings = async () => {
-    await fetchSettings()
-  }
-
   return {
-    settings: settings || DEFAULT_SETTINGS,
+    settings,
     isLoading,
     error,
     refreshSettings,
