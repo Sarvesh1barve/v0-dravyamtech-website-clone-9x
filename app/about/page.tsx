@@ -7,6 +7,8 @@ export const metadata = {
   description: "Learn about Dravyam Technology - our mission, vision, and the team behind research-driven fintech solutions.",
 }
 
+export const revalidate = 60 // Revalidate every 60 seconds instead of static
+
 export default function AboutPage() {
   return (
     <main className="min-h-screen bg-background">

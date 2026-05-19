@@ -18,6 +18,8 @@ export const metadata = {
   description: "Learn about our research-driven approach to building trading systems and educational content.",
 }
 
+export const revalidate = 60
+
 const process = [
   {
     step: "01",

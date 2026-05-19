@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, CreditCard, CheckCircle, XCircle, Clock } from "lucide-react"
+import { Loader2, CreditCard, CheckCircle, XCircle, Clock, Eye } from "lucide-react"
 import { toast } from "sonner"
 
 interface Payment {
@@ -17,6 +17,8 @@ interface Payment {
   amount: number
   payment_type: string
   transaction_id: string | null
+  payment_method: string | null
+  proof_url: string | null
   status: string
   created_at: string
   profiles?: {
@@ -32,13 +34,20 @@ export function AdminPayments() {
   const [payments, setPayments] = useState<Payment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState("all")
-  const supabase = createClient()
+  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null)
+  const [selectedProof, setSelectedProof] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchPayments()
+    setSupabase(createClient())
   }, [])
 
+  useEffect(() => {
+    if (!supabase) return
+    fetchPayments()
+  }, [supabase])
+
   async function fetchPayments() {
+    if (!supabase) return
     try {
       console.log("[v0] Fetching payments...")
       const { data, error } = await supabase
@@ -69,34 +78,21 @@ export function AdminPayments() {
   async function updatePaymentStatus(paymentId: string, newStatus: string, userId: string) {
     try {
       console.log("[v0] Updating payment status:", paymentId, "->", newStatus)
-      const { error } = await supabase
-        .from("payments")
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq("id", paymentId)
+      
+      const response = await fetch("/api/admin/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_status",
+          paymentId,
+          status: newStatus,
+          userId
+        })
+      })
 
-      if (error) {
-        console.error("[v0] Payment update error:", error)
-        toast.error(`Failed to update payment status: ${error.message}`)
-        return
-      }
-
-      // If approved, update user subscription
-      if (newStatus === "approved") {
-        console.log("[v0] Updating subscription for user:", userId)
-        const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-        const { error: subError } = await supabase
-          .from("profiles")
-          .update({
-            is_subscribed: true,
-            subscription_expires_at: expiryDate,
-            updated_at: new Date().toISOString()
-          })
-          .eq("id", userId)
-        
-        if (subError) {
-          console.error("[v0] Subscription update error:", subError)
-          toast.error(`Payment approved but subscription update failed: ${subError.message}`)
-        }
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to update payment status")
       }
 
       console.log("[v0] Payment status updated successfully")
@@ -174,17 +170,19 @@ export function AdminPayments() {
         ) : (
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow className="border-border">
-                  <TableHead className="text-muted-foreground">User</TableHead>
-                  <TableHead className="text-muted-foreground">Type</TableHead>
-                  <TableHead className="text-muted-foreground">Amount</TableHead>
-                  <TableHead className="text-muted-foreground">Transaction ID</TableHead>
-                  <TableHead className="text-muted-foreground">Status</TableHead>
-                  <TableHead className="text-muted-foreground">Date</TableHead>
-                  <TableHead className="text-muted-foreground text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Transaction ID</TableHead>
+                <TableHead>Method</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Proof</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
               <TableBody>
                 {filteredPayments.map((payment) => (
                   <TableRow key={payment.id} className="border-border">
@@ -212,9 +210,27 @@ export function AdminPayments() {
                     <TableCell className="text-muted-foreground font-mono text-sm">
                       {payment.transaction_id || "-"}
                     </TableCell>
+                    <TableCell className="text-muted-foreground capitalize">
+                      {payment.payment_method || "upi"}
+                    </TableCell>
                     <TableCell>{getStatusBadge(payment.status)}</TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell>
                       {new Date(payment.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      {payment.proof_url ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedProof(payment.proof_url)}
+                          className="text-blue-600 hover:text-blue-700"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View Proof
+                        </Button>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">No proof</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       {payment.status === "pending" && (
@@ -277,6 +293,30 @@ export function AdminPayments() {
           </Card>
         </div>
       </CardContent>
+
+      {/* Proof Modal */}
+      {selectedProof && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <Card className="bg-card max-w-2xl w-full">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Payment Proof</CardTitle>
+              <button
+                onClick={() => setSelectedProof(null)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                ✕
+              </button>
+            </CardHeader>
+            <CardContent>
+              <img 
+                src={selectedProof} 
+                alt="Payment proof" 
+                className="w-full h-auto rounded-lg border border-border"
+              />
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </Card>
   )
 }

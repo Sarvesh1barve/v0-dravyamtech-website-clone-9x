@@ -19,6 +19,8 @@ export const metadata = {
   description: "Explore our suite of trading systems, analytics tools, and educational platforms.",
 }
 
+export const revalidate = 60
+
 const products = [
   {
     icon: BarChart3,
