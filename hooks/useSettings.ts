@@ -27,6 +27,21 @@ const DEFAULT_SETTINGS: SiteSettings = {
   updated_at: new Date().toISOString(),
 }
 
+// Map database columns to our SiteSettings type
+function mapDatabaseToSettings(data: any): SiteSettings {
+  return {
+    id: data.id || 'default',
+    hero_title: data.hero_title || DEFAULT_SETTINGS.hero_title,
+    hero_subtitle: data.hero_description || DEFAULT_SETTINGS.hero_subtitle, // Database has hero_description
+    hero_cta_text: data.hero_cta_text || DEFAULT_SETTINGS.hero_cta_text,
+    hero_background_color: data.hero_background_color || '#09090b', // Default to dark
+    hero_text_color: data.text_color || DEFAULT_SETTINGS.hero_text_color, // Database has text_color
+    theme_primary_color: data.primary_color || DEFAULT_SETTINGS.theme_primary_color, // Database has primary_color
+    theme_accent_color: data.accent_color || DEFAULT_SETTINGS.theme_accent_color, // Database has accent_color
+    updated_at: data.updated_at || new Date().toISOString(),
+  }
+}
+
 export function useSettings() {
   // Initialize with defaults immediately for fast initial render
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS)
@@ -54,10 +69,7 @@ export function useSettings() {
         }
 
         if (data) {
-          setSettings({
-            ...DEFAULT_SETTINGS,
-            ...data,
-          } as SiteSettings)
+          setSettings(mapDatabaseToSettings(data))
         }
       } catch (err) {
         if (!isMounted) return
@@ -89,10 +101,7 @@ export function useSettings() {
         .single()
       
       if (data) {
-        setSettings({
-          ...DEFAULT_SETTINGS,
-          ...data,
-        } as SiteSettings)
+        setSettings(mapDatabaseToSettings(data))
       }
     } catch (err) {
       console.error('[v0] Refresh error:', err)
