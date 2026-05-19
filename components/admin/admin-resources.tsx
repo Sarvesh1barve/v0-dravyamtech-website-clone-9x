@@ -462,12 +462,6 @@ export function AdminResources() {
                       </div>
                     )}
                   </TabsContent>
-                    {formData.thumbnail_file_url && (
-                      <div className="text-xs text-green-500 flex items-center gap-1">
-                        ✓ File uploaded: {formData.thumbnail_file_url.split('/').pop()?.slice(0, 20)}...
-                      </div>
-                    )}
-                  </TabsContent>
 
                   <TabsContent value="drive" className="space-y-2">
                     <Input
