@@ -10,8 +10,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Loader2, Plus, Pencil, Trash2, Video, Lock, Unlock } from "lucide-react"
+import { Loader2, Plus, Pencil, Trash2, Video, Lock, Unlock, Upload, Link as LinkIcon, Image, Play } from "lucide-react"
 import { toast } from "sonner"
 
 interface Resource {
@@ -19,7 +20,11 @@ interface Resource {
   title: string
   description: string | null
   video_url: string | null
+  video_file_url: string | null
+  video_drive_link: string | null
   thumbnail_url: string | null
+  thumbnail_file_url: string | null
+  thumbnail_drive_link: string | null
   category: string
   is_locked: boolean
   price: number
@@ -32,12 +37,18 @@ export function AdminResources() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingResource, setEditingResource] = useState<Resource | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     video_url: "",
+    video_file_url: "",
+    video_drive_link: "",
     thumbnail_url: "",
+    thumbnail_file_url: "",
+    thumbnail_drive_link: "",
     category: "general",
     is_locked: false
   })
@@ -74,7 +85,11 @@ export function AdminResources() {
       title: "",
       description: "",
       video_url: "",
+      video_file_url: "",
+      video_drive_link: "",
       thumbnail_url: "",
+      thumbnail_file_url: "",
+      thumbnail_drive_link: "",
       category: "general",
       is_locked: false
     })
@@ -87,16 +102,83 @@ export function AdminResources() {
       title: resource.title,
       description: resource.description || "",
       video_url: resource.video_url || "",
+      video_file_url: resource.video_file_url || "",
+      video_drive_link: resource.video_drive_link || "",
       thumbnail_url: resource.thumbnail_url || "",
+      thumbnail_file_url: resource.thumbnail_file_url || "",
+      thumbnail_drive_link: resource.thumbnail_drive_link || "",
       category: resource.category,
       is_locked: resource.is_locked
     })
     setIsDialogOpen(true)
   }
 
+  async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>, type: "video" | "thumbnail") {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setIsUploading(true)
+    setUploadProgress(0)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("type", type)
+
+      const xhr = new XMLHttpRequest()
+
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) {
+          const percentComplete = (e.loaded / e.total) * 100
+          setUploadProgress(percentComplete)
+        }
+      })
+
+      xhr.addEventListener("load", () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText)
+          if (type === "video") {
+            setFormData(prev => ({ ...prev, video_file_url: response.url }))
+            toast.success("Video uploaded successfully!")
+          } else {
+            setFormData(prev => ({ ...prev, thumbnail_file_url: response.url }))
+            toast.success("Thumbnail uploaded successfully!")
+          }
+          setIsUploading(false)
+        } else {
+          throw new Error("Upload failed")
+        }
+      })
+
+      xhr.addEventListener("error", () => {
+        toast.error("Upload failed")
+        setIsUploading(false)
+      })
+
+      xhr.open("POST", "/api/admin/upload-resource-media")
+      xhr.send(formData)
+    } catch (error) {
+      console.error("[v0] Upload error:", error)
+      toast.error("Failed to upload file")
+      setIsUploading(false)
+    }
+  }
+
   async function handleSave() {
     if (!formData.title.trim()) {
       toast.error("Title is required")
+      return
+    }
+
+    // Check that at least one video source is provided
+    if (!formData.video_url && !formData.video_file_url && !formData.video_drive_link) {
+      toast.error("Please provide a video URL, file, or Google Drive link")
+      return
+    }
+
+    // Check that at least one thumbnail source is provided
+    if (!formData.thumbnail_url && !formData.thumbnail_file_url && !formData.thumbnail_drive_link) {
+      toast.error("Please provide a thumbnail URL, file, or Google Drive link")
       return
     }
 
@@ -115,7 +197,11 @@ export function AdminResources() {
               title: formData.title,
               description: formData.description || null,
               video_url: formData.video_url || null,
+              video_file_url: formData.video_file_url || null,
+              video_drive_link: formData.video_drive_link || null,
               thumbnail_url: formData.thumbnail_url || null,
+              thumbnail_file_url: formData.thumbnail_file_url || null,
+              thumbnail_drive_link: formData.thumbnail_drive_link || null,
               category: formData.category,
               is_locked: formData.is_locked,
               updated_at: new Date().toISOString()
@@ -133,7 +219,6 @@ export function AdminResources() {
         fetchResources()
         setIsDialogOpen(false)
         
-        // Revalidate resources pages
         await fetch("/api/revalidate?tag=resources-list").catch(err => 
           console.error("[v0] Revalidation error:", err)
         )
@@ -148,7 +233,11 @@ export function AdminResources() {
               title: formData.title,
               description: formData.description || null,
               video_url: formData.video_url || null,
+              video_file_url: formData.video_file_url || null,
+              video_drive_link: formData.video_drive_link || null,
               thumbnail_url: formData.thumbnail_url || null,
+              thumbnail_file_url: formData.thumbnail_file_url || null,
+              thumbnail_drive_link: formData.thumbnail_drive_link || null,
               category: formData.category,
               is_locked: formData.is_locked
             }
@@ -165,7 +254,6 @@ export function AdminResources() {
         fetchResources()
         setIsDialogOpen(false)
         
-        // Revalidate resources pages
         await fetch("/api/revalidate?tag=resources-list").catch(err => 
           console.error("[v0] Revalidation error:", err)
         )
@@ -260,30 +348,129 @@ export function AdminResources() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="video_url" className="text-foreground">Video URL</Label>
-                <Input
-                  id="video_url"
-                  value={formData.video_url}
-                  onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
-                  className="bg-input text-foreground"
-                  placeholder="https://youtube.com/watch?v=..."
-                />
-                <p className="text-xs text-muted-foreground">YouTube, Vimeo, or direct video URL</p>
+              {/* Video Section */}
+              <div className="space-y-3 border-t border-border pt-4">
+                <Label className="text-foreground font-semibold flex items-center gap-2">
+                  <Play className="h-4 w-4" /> Video *
+                </Label>
+                <Tabs defaultValue="url" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3 bg-secondary">
+                    <TabsTrigger value="url">Direct URL</TabsTrigger>
+                    <TabsTrigger value="upload">Upload</TabsTrigger>
+                    <TabsTrigger value="drive">Google Drive</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="url" className="space-y-2">
+                    <Input
+                      value={formData.video_url}
+                      onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+                      className="bg-input text-foreground"
+                      placeholder="https://youtube.com/watch?v=... or https://vimeo.com/..."
+                    />
+                    <p className="text-xs text-muted-foreground">YouTube, Vimeo, or direct video URL</p>
+                    {formData.video_url && <p className="text-xs text-green-500">✓ URL set</p>}
+                  </TabsContent>
+
+                  <TabsContent value="upload" className="space-y-2">
+                    <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm,video/ogg,video/quicktime"
+                        onChange={(e) => handleFileUpload(e, "video")}
+                        disabled={isUploading}
+                        className="hidden"
+                        id="video-upload"
+                      />
+                      <label htmlFor="video-upload" className="cursor-pointer flex flex-col items-center">
+                        <Upload className="h-6 w-6 text-muted-foreground mb-2" />
+                        <span className="text-sm text-muted-foreground">
+                          {isUploading ? `Uploading... ${Math.round(uploadProgress)}%` : "Click to upload video (MP4, WebM, OGG, MOV)"}
+                        </span>
+                      </label>
+                      {isUploading && <div className="mt-2 w-full bg-secondary rounded h-1" style={{width: `${uploadProgress}%`}}></div>}
+                    </div>
+                    {formData.video_file_url && (
+                      <div className="text-xs text-green-500 flex items-center gap-1">
+                        ✓ File uploaded: {formData.video_file_url.split('/').pop()?.slice(0, 20)}...
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="drive" className="space-y-2">
+                    <Input
+                      value={formData.video_drive_link}
+                      onChange={(e) => setFormData({ ...formData, video_drive_link: e.target.value })}
+                      className="bg-input text-foreground"
+                      placeholder="https://drive.google.com/file/d/FILE_ID/view"
+                    />
+                    <p className="text-xs text-muted-foreground">Share the Google Drive link (make it publicly accessible)</p>
+                    {formData.video_drive_link && <p className="text-xs text-green-500">✓ Drive link set</p>}
+                  </TabsContent>
+                </Tabs>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="thumbnail_url" className="text-foreground">Thumbnail URL</Label>
-                <Input
-                  id="thumbnail_url"
-                  value={formData.thumbnail_url}
-                  onChange={(e) => setFormData({ ...formData, thumbnail_url: e.target.value })}
-                  className="bg-input text-foreground"
-                  placeholder="https://example.com/thumbnail.jpg"
-                />
+              {/* Thumbnail Section */}
+              <div className="space-y-3 border-t border-border pt-4">
+                <Label className="text-foreground font-semibold flex items-center gap-2">
+                  <Image className="h-4 w-4" /> Thumbnail *
+                </Label>
+                <Tabs defaultValue="url" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3 bg-secondary">
+                    <TabsTrigger value="url">Direct URL</TabsTrigger>
+                    <TabsTrigger value="upload">Upload</TabsTrigger>
+                    <TabsTrigger value="drive">Google Drive</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="url" className="space-y-2">
+                    <Input
+                      value={formData.thumbnail_url}
+                      onChange={(e) => setFormData({ ...formData, thumbnail_url: e.target.value })}
+                      className="bg-input text-foreground"
+                      placeholder="https://example.com/thumbnail.jpg"
+                    />
+                    <p className="text-xs text-muted-foreground">JPEG, PNG, or WebP image</p>
+                    {formData.thumbnail_url && <p className="text-xs text-green-500">✓ URL set</p>}
+                  </TabsContent>
+
+                  <TabsContent value="upload" className="space-y-2">
+                    <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={(e) => handleFileUpload(e, "thumbnail")}
+                        disabled={isUploading}
+                        className="hidden"
+                        id="thumbnail-upload"
+                      />
+                      <label htmlFor="thumbnail-upload" className="cursor-pointer flex flex-col items-center">
+                        <Image className="h-6 w-6 text-muted-foreground mb-2" />
+                        <span className="text-sm text-muted-foreground">
+                          {isUploading ? `Uploading... ${Math.round(uploadProgress)}%` : "Click to upload thumbnail (JPEG, PNG, WebP)"}
+                        </span>
+                      </label>
+                      {isUploading && <div className="mt-2 w-full bg-secondary rounded h-1" style={{width: `${uploadProgress}%`}}></div>}
+                    </div>
+                    {formData.thumbnail_file_url && (
+                      <div className="text-xs text-green-500 flex items-center gap-1">
+                        ✓ File uploaded: {formData.thumbnail_file_url.split('/').pop()?.slice(0, 20)}...
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="drive" className="space-y-2">
+                    <Input
+                      value={formData.thumbnail_drive_link}
+                      onChange={(e) => setFormData({ ...formData, thumbnail_drive_link: e.target.value })}
+                      className="bg-input text-foreground"
+                      placeholder="https://drive.google.com/file/d/FILE_ID/view"
+                    />
+                    <p className="text-xs text-muted-foreground">Share the Google Drive link (make it publicly accessible)</p>
+                    {formData.thumbnail_drive_link && <p className="text-xs text-green-500">✓ Drive link set</p>}
+                  </TabsContent>
+                </Tabs>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 border-t border-border pt-4">
                 <Label htmlFor="category" className="text-foreground">Category</Label>
                 <Select
                   value={formData.category}
@@ -302,7 +489,7 @@ export function AdminResources() {
                 </Select>
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between border-t border-border pt-4">
                 <div className="space-y-0.5">
                   <Label htmlFor="is_locked" className="text-foreground">Lock Resource</Label>
                   <p className="text-xs text-muted-foreground">Only subscribers can view locked content</p>
@@ -320,7 +507,7 @@ export function AdminResources() {
                 </Button>
                 <Button 
                   onClick={handleSave} 
-                  disabled={isSaving}
+                  disabled={isSaving || isUploading}
                   className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
@@ -345,7 +532,6 @@ export function AdminResources() {
                   <TableHead className="text-muted-foreground">Title</TableHead>
                   <TableHead className="text-muted-foreground">Category</TableHead>
                   <TableHead className="text-muted-foreground">Status</TableHead>
-                  <TableHead className="text-muted-foreground">Price</TableHead>
                   <TableHead className="text-muted-foreground text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -368,9 +554,6 @@ export function AdminResources() {
                           <Unlock className="h-3 w-3" /> Free
                         </span>
                       )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {resource.is_locked ? "Locked" : "Free"}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
