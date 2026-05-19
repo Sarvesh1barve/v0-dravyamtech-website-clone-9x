@@ -51,6 +51,47 @@ async function verifyAdminAuth() {
   }
 }
 
+export async function GET(request: NextRequest) {
+  try {
+    // Verify admin authentication
+    const { isAdmin, user } = await verifyAdminAuth()
+    
+    if (!isAdmin || !user) {
+      console.warn("[users-api] Unauthorized GET attempt")
+      return NextResponse.json(
+        { error: "Unauthorized - admin access required" },
+        { status: 403 }
+      )
+    }
+
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: { persistSession: false }
+      }
+    )
+
+    console.log("[v0] Fetching all users for admin:", user.id)
+
+    const { data: profiles, error } = await supabaseAdmin
+      .from("profiles")
+      .select("*")
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      console.error("[v0] Error fetching profiles:", error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json(profiles || [])
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error"
+    console.error("[v0] Users API GET exception:", message)
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Verify admin authentication

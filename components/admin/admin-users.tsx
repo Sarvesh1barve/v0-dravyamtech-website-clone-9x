@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,16 +25,10 @@ export function AdminUsers() {
   const [filteredUsers, setFilteredUsers] = useState<Profile[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
-  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null)
 
   useEffect(() => {
-    setSupabase(createClient())
-  }, [])
-
-  useEffect(() => {
-    if (!supabase) return
     fetchUsers()
-  }, [supabase])
+  }, [])
 
   useEffect(() => {
     if (searchQuery.trim() === "") {
@@ -53,22 +46,19 @@ export function AdminUsers() {
   }, [searchQuery, users])
 
   async function fetchUsers() {
-    if (!supabase) return
     try {
-      console.log("[v0] Fetching users...")
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false })
-
-      if (error) {
-        console.error("[v0] Fetch users error:", error)
-        toast.error(`Failed to load users: ${error.message}`)
-      } else {
-        console.log("[v0] Users loaded:", data?.length || 0)
-        setUsers(data || [])
-        setFilteredUsers(data || [])
+      console.log("[v0] Fetching users from API...")
+      const response = await fetch("/api/admin/users")
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || `HTTP ${response.status}`)
       }
+
+      const data = await response.json()
+      console.log("[v0] Users loaded:", data?.length || 0)
+      setUsers(data || [])
+      setFilteredUsers(data || [])
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to load users"
       console.error("[v0] Fetch exception:", err)
