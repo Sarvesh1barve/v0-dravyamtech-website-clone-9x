@@ -17,62 +17,92 @@ export type SiteSettings = {
 
 const DEFAULT_SETTINGS: SiteSettings = {
   id: 'default',
-  hero_title: 'Quantitative Research & Trading Systems',
-  hero_subtitle: 'Data-Driven Financial Intelligence',
-  hero_cta_text: 'Explore Products',
-  hero_background_color: '#000000',
-  hero_text_color: '#ffffff',
-  theme_primary_color: '#3b82f6',
+  hero_title: 'Fintech That Thinks',
+  hero_subtitle: 'Building research-driven trading systems, advanced analytics, and education platforms for disciplined market participation',
+  hero_cta_text: 'Explore Our Work',
+  hero_background_color: '#09090b',
+  hero_text_color: '#fafafa',
+  theme_primary_color: '#10b981',
   theme_accent_color: '#10b981',
   updated_at: new Date().toISOString(),
 }
 
 export function useSettings() {
-  const [settings, setSettings] = useState<SiteSettings | null>(null)
+  // Initialize with defaults immediately for fast initial render
+  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    let isMounted = true
+    
+    async function fetchSettings() {
+      try {
+        const supabase = createClient()
+        
+        const { data, error: fetchError } = await supabase
+          .from('site_settings')
+          .select('*')
+          .single()
+
+        if (!isMounted) return
+
+        if (fetchError) {
+          console.error('[v0] Settings fetch error:', fetchError)
+          // Keep using defaults on error
+          return
+        }
+
+        if (data) {
+          setSettings({
+            ...DEFAULT_SETTINGS,
+            ...data,
+          } as SiteSettings)
+        }
+      } catch (err) {
+        if (!isMounted) return
+        const message = err instanceof Error ? err.message : 'Failed to fetch settings'
+        console.error('[v0] Settings error:', message)
+        setError(message)
+        // Keep using defaults on error
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
     fetchSettings()
+    
+    return () => {
+      isMounted = false
+    }
   }, [])
 
-  async function fetchSettings() {
+  const refreshSettings = async () => {
+    setIsLoading(true)
     try {
-      setIsLoading(true)
       const supabase = createClient()
-      
-      const { data, error: fetchError } = await supabase
+      const { data } = await supabase
         .from('site_settings')
         .select('*')
         .single()
-
-      if (fetchError) {
-        console.error('[v0] Settings fetch error:', fetchError)
-        setSettings(DEFAULT_SETTINGS)
-        return
-      }
-
+      
       if (data) {
-        setSettings(data as SiteSettings)
-      } else {
-        setSettings(DEFAULT_SETTINGS)
+        setSettings({
+          ...DEFAULT_SETTINGS,
+          ...data,
+        } as SiteSettings)
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch settings'
-      console.error('[v0] Settings error:', message)
-      setError(message)
-      setSettings(DEFAULT_SETTINGS)
+      console.error('[v0] Refresh error:', err)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const refreshSettings = async () => {
-    await fetchSettings()
-  }
-
   return {
-    settings: settings || DEFAULT_SETTINGS,
+    settings,
     isLoading,
     error,
     refreshSettings,

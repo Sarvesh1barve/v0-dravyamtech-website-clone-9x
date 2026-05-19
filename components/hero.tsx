@@ -5,14 +5,32 @@ import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSettings } from "@/hooks/useSettings"
 
+// Default values for immediate render (no waiting for fetch)
+const DEFAULTS = {
+  hero_title: "Fintech That Thinks",
+  hero_subtitle: "Building research-driven trading systems, advanced analytics, and education platforms for disciplined market participation",
+  hero_cta_text: "Explore Our Work",
+  hero_background_color: "#09090b",
+  hero_text_color: "#fafafa",
+  theme_primary_color: "#10b981",
+}
+
 export function Hero() {
-  const { settings } = useSettings()
+  const { settings, isLoading } = useSettings()
+  
+  // Use defaults immediately, then switch to fetched settings
+  const heroTitle = settings?.hero_title || DEFAULTS.hero_title
+  const heroSubtitle = settings?.hero_subtitle || DEFAULTS.hero_subtitle
+  const heroCta = settings?.hero_cta_text || DEFAULTS.hero_cta_text
+  const bgColor = settings?.hero_background_color || DEFAULTS.hero_background_color
+  const textColor = settings?.hero_text_color || DEFAULTS.hero_text_color
+  const primaryColor = settings?.theme_primary_color || DEFAULTS.theme_primary_color
 
   return (
     <section 
-      className="relative min-h-screen flex items-center justify-center overflow-hidden transition-colors duration-500"
+      className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background"
       style={{
-        backgroundColor: settings.hero_background_color,
+        backgroundColor: bgColor,
       }}
     >
       {/* Background with candlestick chart pattern */}
@@ -80,9 +98,9 @@ export function Hero() {
         
         {/* Radial gradient overlay for depth */}
         <div 
-          className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-opacity-100 transition-all duration-500"
+          className="absolute inset-0"
           style={{
-            background: `radial-gradient(ellipse at center, transparent 0%, ${settings.hero_background_color}80 70%)`
+            background: `radial-gradient(ellipse at center, transparent 0%, ${bgColor}cc 70%)`
           }}
         />
       </div>
@@ -90,31 +108,31 @@ export function Hero() {
       {/* Content */}
       <div className="relative z-10 mx-auto max-w-4xl px-6 py-32 text-center lg:py-40">
         <h1 
-          className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl text-balance transition-colors duration-500"
-          style={{ color: settings.hero_text_color }}
+          className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl text-balance"
+          style={{ color: textColor }}
         >
-          {settings.hero_title}{" "}
-          <span style={{ color: settings.theme_primary_color }}>Beyond Numbers</span>
+          {heroTitle}{" "}
+          <span style={{ color: primaryColor }}>Beyond Numbers</span>
         </h1>
         
         <p 
-          className="mt-6 text-lg leading-relaxed max-w-2xl mx-auto text-balance transition-colors duration-500"
-          style={{ color: `${settings.hero_text_color}cc` }}
+          className="mt-6 text-lg leading-relaxed max-w-2xl mx-auto text-balance"
+          style={{ color: `${textColor}cc` }}
         >
-          {settings.hero_subtitle}
+          {heroSubtitle}
         </p>
         
         <div className="mt-10 flex items-center justify-center gap-x-4">
           <Link href="/products">
             <Button 
               size="lg" 
-              className="gap-2 transition-colors duration-500"
+              className="gap-2"
               style={{
-                backgroundColor: settings.theme_primary_color,
+                backgroundColor: primaryColor,
                 color: 'white'
               }}
             >
-              {settings.hero_cta_text}
+              {heroCta}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
@@ -123,9 +141,9 @@ export function Hero() {
 
       {/* Bottom gradient fade */}
       <div 
-        className="absolute bottom-0 left-0 right-0 h-32 transition-all duration-500"
+        className="absolute bottom-0 left-0 right-0 h-32"
         style={{
-          background: `linear-gradient(to top, ${settings.hero_background_color}, transparent)`
+          background: `linear-gradient(to top, ${bgColor}, transparent)`
         }}
       />
     </section>
