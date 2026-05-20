@@ -6,6 +6,21 @@ export async function updateSession(request: NextRequest) {
     request,
   })
 
+  // Check for auth error params on root path and redirect to error page
+  const { pathname, searchParams, hash } = request.nextUrl
+  const error = searchParams.get('error')
+  const errorCode = searchParams.get('error_code')
+  
+  // If we have error params on the home page, redirect to auth error page
+  if ((pathname === '/' || pathname === '') && (error || errorCode)) {
+    const errorUrl = new URL('/auth/error', request.url)
+    if (error) errorUrl.searchParams.set('error', error)
+    if (errorCode) errorUrl.searchParams.set('error_code', errorCode)
+    const errorDescription = searchParams.get('error_description')
+    if (errorDescription) errorUrl.searchParams.set('error_description', errorDescription)
+    return NextResponse.redirect(errorUrl)
+  }
+
   // With Fluid compute, don't put this client in a global environment
   // variable. Always create a new one on each request.
   const supabase = createServerClient(
