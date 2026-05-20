@@ -29,10 +29,13 @@ export default function LoginPage() {
     setError("")
     setMessage("")
 
+    // Get the base URL for redirects
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+
     try {
       if (mode === "forgot") {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/reset-password`,
+          redirectTo: `${baseUrl}/auth/reset-password`,
         })
         if (error) throw error
         setMessage("Password reset link sent! Check your email.")
@@ -57,7 +60,7 @@ export default function LoginPage() {
             data: {
               full_name: fullName,
             },
-            emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+            emailRedirectTo: `${baseUrl}/auth/callback?next=/dashboard`,
           },
         })
         if (error) throw error
