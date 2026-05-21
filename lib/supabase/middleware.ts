@@ -19,6 +19,8 @@ export async function updateSession(request: NextRequest) {
     // Preserve any other params like 'next' or 'type'
     const next = searchParams.get('next')
     if (next) callbackUrl.searchParams.set('next', next)
+    const type = searchParams.get('type')
+    if (type) callbackUrl.searchParams.set('type', type)
     return NextResponse.redirect(callbackUrl)
   }
   

@@ -31,11 +31,13 @@ export async function GET(request: NextRequest) {
     
     if (!error && data.session) {
       // Check if this is a password recovery flow
-      // The session user will have aal1 for recovery
-      const isRecovery = type === 'recovery' || data.session.user?.aud === 'authenticated'
+      // Supabase sets user.recovery_sent_at when a recovery email was sent
+      // Also check the AMR (Authentication Methods Reference) for recovery
+      const amr = data.session.user?.amr
+      const isRecovery = type === 'recovery' || amr?.some(m => m.method === 'recovery')
       
       // For password reset, always redirect to reset-password page
-      if (type === 'recovery') {
+      if (isRecovery) {
         return NextResponse.redirect(new URL('/reset-password', request.url))
       }
       
