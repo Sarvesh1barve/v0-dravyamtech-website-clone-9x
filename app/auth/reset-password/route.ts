@@ -1,9 +1,7 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 
 export async function GET(request: NextRequest) {
-  const { searchParams, hash } = request.nextUrl
+  const { searchParams } = request.nextUrl
   
   // Check for error params (Supabase sends these when link is invalid/expired)
   const error = searchParams.get('error')
@@ -19,46 +17,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(errorUrl)
   }
 
-  // Get the code from params
-  const code = searchParams.get('code')
-  const type = searchParams.get('type') // 'recovery' for password reset, 'signup' for email verification
-  
-  if (code) {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options),
-            )
-          },
-        },
-      },
-    )
-
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    
-    if (error) {
-      // Exchange failed - redirect to error
-      const errorUrl = new URL('/auth/error', request.url)
-      errorUrl.searchParams.set('error', 'exchange_failed')
-      errorUrl.searchParams.set('error_description', error.message)
-      return NextResponse.redirect(errorUrl)
-    }
-    
-    // Success - redirect to reset password form
-    return NextResponse.redirect(new URL('/reset-password', request.url))
-  }
-
-  // No code provided - redirect to error
-  const errorUrl = new URL('/auth/error', request.url)
-  errorUrl.searchParams.set('error', 'missing_code')
-  errorUrl.searchParams.set('error_description', 'No authentication code provided')
-  return NextResponse.redirect(errorUrl)
+  // For password reset, Supabase sends tokens in the URL hash fragment
+  // The hash is not accessible server-side, so we redirect to a client page
+  // that will handle the token exchange
+  // The reset-password page will check for a valid session
+  return NextResponse.redirect(new URL('/reset-password', request.url))
 }

@@ -8,29 +8,66 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { createClient } from "@/lib/supabase/client"
-import { Eye, EyeOff, Loader2, CheckCircle } from "lucide-react"
+import { Eye, EyeOff, Loader2, CheckCircle, AlertCircle } from "lucide-react"
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
+  const [hasSession, setHasSession] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
-  // Check if user has a valid session from the reset link
+  // Handle the password reset token from URL hash
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        // No session, redirect to login
-        router.push("/login")
+    const handlePasswordReset = async () => {
+      // Check if there's a hash in the URL (Supabase sends tokens in hash)
+      const hash = window.location.hash
+      
+      if (hash && hash.includes('access_token')) {
+        // Parse the hash to get the tokens
+        const params = new URLSearchParams(hash.substring(1))
+        const accessToken = params.get('access_token')
+        const refreshToken = params.get('refresh_token')
+        const type = params.get('type')
+        
+        if (accessToken && refreshToken && type === 'recovery') {
+          // Set the session with the tokens from the URL
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          })
+          
+          if (error) {
+            setError("Invalid or expired reset link. Please request a new one.")
+            setInitialLoading(false)
+            return
+          }
+          
+          // Clear the hash from URL for security
+          window.history.replaceState(null, '', window.location.pathname)
+          setHasSession(true)
+          setInitialLoading(false)
+          return
+        }
       }
+      
+      // No hash tokens, check for existing session
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        setHasSession(true)
+      } else {
+        setError("No valid reset session found. Please request a new password reset link.")
+      }
+      setInitialLoading(false)
     }
-    checkSession()
-  }, [router, supabase])
+    
+    handlePasswordReset()
+  }, [supabase])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -83,6 +120,46 @@ export default function ResetPasswordPage() {
               </p>
               <Button onClick={() => router.push("/login")} className="bg-primary text-primary-foreground">
                 Go to Login
+              </Button>
+            </div>
+          </div>
+        </section>
+        <Footer />
+      </main>
+    )
+  }
+
+  if (initialLoading) {
+    return (
+      <main className="min-h-screen bg-background">
+        <Header />
+        <section className="pt-32 pb-16 px-6 min-h-[80vh] flex items-center">
+          <div className="max-w-md mx-auto w-full">
+            <div className="bg-card border border-border rounded-xl p-8 text-center">
+              <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+              <p className="text-muted-foreground">Verifying reset link...</p>
+            </div>
+          </div>
+        </section>
+        <Footer />
+      </main>
+    )
+  }
+
+  if (!hasSession && error) {
+    return (
+      <main className="min-h-screen bg-background">
+        <Header />
+        <section className="pt-32 pb-16 px-6 min-h-[80vh] flex items-center">
+          <div className="max-w-md mx-auto w-full">
+            <div className="bg-card border border-border rounded-xl p-8 text-center">
+              <div className="w-16 h-16 bg-destructive/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-8 h-8 text-destructive" />
+              </div>
+              <h1 className="text-2xl font-bold text-foreground mb-2">Reset Link Invalid</h1>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <Button onClick={() => router.push("/login?mode=forgot")} className="bg-primary text-primary-foreground">
+                Request New Link
               </Button>
             </div>
           </div>
