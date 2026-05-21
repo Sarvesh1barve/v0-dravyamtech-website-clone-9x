@@ -10,6 +10,17 @@ export async function updateSession(request: NextRequest) {
   const { pathname, searchParams, hash } = request.nextUrl
   const error = searchParams.get('error')
   const errorCode = searchParams.get('error_code')
+  const code = searchParams.get('code')
+  
+  // If we have a code param on the home page, redirect to auth callback to exchange it
+  if ((pathname === '/' || pathname === '') && code) {
+    const callbackUrl = new URL('/auth/callback', request.url)
+    callbackUrl.searchParams.set('code', code)
+    // Preserve any other params like 'next' or 'type'
+    const next = searchParams.get('next')
+    if (next) callbackUrl.searchParams.set('next', next)
+    return NextResponse.redirect(callbackUrl)
+  }
   
   // If we have error params on the home page, redirect to auth error page
   if ((pathname === '/' || pathname === '') && (error || errorCode)) {
